@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"github.com/gin-gonic/gin"
 )

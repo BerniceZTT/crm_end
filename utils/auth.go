@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"server2/config"
-	"server2/models"
+	"github.com/BerniceZTT/crm_end/config"
+	"github.com/BerniceZTT/crm_end/models"
 
 	"github.com/dgrijalva/jwt-go"
 )

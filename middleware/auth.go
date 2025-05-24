@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"server2/models"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"

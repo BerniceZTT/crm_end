@@ -8,9 +8,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"server2/models"
-	"server2/repository"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/utils"
 )
 
 // getPublicPoolCustomers 获取公海客户列表

@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"server2/controllers"
-	"server2/middleware"
+	"github.com/BerniceZTT/crm_end/controllers"
+	"github.com/BerniceZTT/crm_end/middleware"
 
 	"github.com/gin-gonic/gin"
 )

@@ -1,11 +1,11 @@
-// server2/routes/change_customer_routes.go
+// github.com/BerniceZTT/crm_end/routes/change_customer_routes.go
 package routes
 
 import (
 	"github.com/gin-gonic/gin"
 
-	"server2/controllers"
-	"server2/middleware"
+	"github.com/BerniceZTT/crm_end/controllers"
+	"github.com/BerniceZTT/crm_end/middleware"
 )
 
 func RegisterChangeCustomerRoutes(router *gin.Engine) {

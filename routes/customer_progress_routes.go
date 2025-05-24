@@ -1,11 +1,11 @@
-// server2/routes/customer_progress_routes.go
+// github.com/BerniceZTT/crm_end/routes/customer_progress_routes.go
 package routes
 
 import (
 	"github.com/gin-gonic/gin"
 
-	"server2/controllers"
-	"server2/middleware"
+	"github.com/BerniceZTT/crm_end/controllers"
+	"github.com/BerniceZTT/crm_end/middleware"
 )
 
 // RegisterCustomerProgressRoutes 注册客户进展相关路由

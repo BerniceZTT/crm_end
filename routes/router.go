@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"server2/repository"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"github.com/gin-gonic/gin"
 )

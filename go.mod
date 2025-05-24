@@ -1,4 +1,4 @@
-module server2
+module github.com/BerniceZTT/crm_end
 
 go 1.23.6
 

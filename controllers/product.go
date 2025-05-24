@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"server2/models"
-	"server2/repository"
-	"server2/utils"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"

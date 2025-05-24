@@ -3,8 +3,8 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 
-	"server2/controllers"
-	"server2/middleware"
+	"github.com/BerniceZTT/crm_end/controllers"
+	"github.com/BerniceZTT/crm_end/middleware"
 )
 
 // RegisterInventoryRoutes 注册库存管理相关路由

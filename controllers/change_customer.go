@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
-	"server2/models"
-	"server2/repository"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/utils"
 )
 
 // AssignCustomer 处理客户分配请求

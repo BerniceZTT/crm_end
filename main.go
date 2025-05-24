@@ -9,11 +9,11 @@ import (
 	"syscall"
 	"time"
 
-	"server2/config"
-	"server2/middleware"
-	"server2/repository"
-	"server2/routes"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/config"
+	"github.com/BerniceZTT/crm_end/middleware"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/routes"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"server2/models"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/utils"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

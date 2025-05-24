@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"server2/models"
+
+	"github.com/BerniceZTT/crm_end/models"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"

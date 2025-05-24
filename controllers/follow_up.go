@@ -10,9 +10,9 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"server2/models"
-	"server2/repository"
-	"server2/utils"
+	"github.com/BerniceZTT/crm_end/models"
+	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/utils"
 )
 
 // GetCustomerFollowUpRecords 获取某个客户的跟进记录列表

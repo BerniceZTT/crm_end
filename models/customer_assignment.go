@@ -1,4 +1,4 @@
-// server2/models/customer_assignment.go
+// github.com/BerniceZTT/crm_end/models/customer_assignment.go
 package models
 
 import (
