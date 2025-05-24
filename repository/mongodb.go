@@ -350,7 +350,9 @@ func GetDB() *mongo.Database {
 		ctx = context.Background()
 
 		// 设置连接选项
-		clientOptions := options.Client().ApplyURI("mongodb://47.113.230.108:27017")
+		clientOptions := options.Client().ApplyURI(
+			"mongodb://qianxin:QianXin123@47.113.230.108:27017/crm?authSource=admin",
+		)
 
 		// 连接到MongoDB
 		var err error
