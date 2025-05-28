@@ -331,22 +331,27 @@ func getProductCustomerRelation(ctx context.Context, customerQuery bson.M) ([]mo
 
 	var products []struct {
 		ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-		ModelName   string             `bson:"modelName"`
-		PackageType string             `bson:"packageType"`
+		ModelName   string             `json:"modelName" bson:"modelName"`
+		PackageType string             `json:"packageType" bson:"packageType"`
 	}
 
 	if err = cursor.All(ctx, &products); err != nil {
 		return nil, err
 	}
+	productsByte, _ := json.Marshal(products)
+
+	// bernice todo
+	utils.Logger.Info().
+		Str("products", string(productsByte)).
+		Msg("测试测试")
 
 	// 计算每个产品关联的客户数量
 	var productRelationData []models.ChartDataItem
 
 	for _, product := range products {
-		productID := product.ID.Hex()
+		// productID := product.ID.Hex()
 		query := customerQuery
-		query["productNeeds"] = bson.M{"$elemMatch": bson.M{"$regex": productID}}
-
+		query["productneeds"] = bson.M{"$elemMatch": bson.M{"$regex": product.ModelName}}
 		count, err := customersCollection.CountDocuments(ctx, query)
 		if err != nil {
 			return nil, err
@@ -414,7 +419,7 @@ func getProductProgressDistribution(ctx context.Context, customerQuery bson.M) (
 		for k, v := range customerQuery {
 			query[k] = v
 		}
-		query["productNeeds"] = bson.M{"$elemMatch": bson.M{"$regex": productID}}
+		query["productneeds"] = bson.M{"$elemMatch": bson.M{"$regex": productID}}
 
 		sampleQuery := query
 		sampleQuery["progress"] = string(models.CustomerProgressSampleEvaluation)

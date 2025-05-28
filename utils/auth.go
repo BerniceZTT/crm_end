@@ -160,7 +160,7 @@ func HasPermission(role models.UserRole, resource string, action string) bool {
 		models.UserRoleFACTORY_SALES: {
 			"customers": {"read", "create", "update"},
 			"products":  {"read"},
-			"agents":    {"read"},
+			"agents":    {"read", "create"},
 		},
 		models.UserRoleINVENTORY_MANAGER: {
 			"products":  {"read", "update"},

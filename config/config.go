@@ -17,9 +17,6 @@ type Config struct {
 
 // LoadConfig 从环境变量加载配置
 func LoadConfig() *Config {
-	// bernice todo
-	// port, _ := strconv.Atoi(getEnv("PORT", "3002"))
-
 	port, _ := strconv.Atoi(getEnv("PORT", "8080"))
 	return &Config{
 		Port:     port,

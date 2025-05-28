@@ -225,6 +225,7 @@ func UpdateAgent(c *gin.Context) {
 		Phone          string `json:"phone"`
 		RelatedSalesID string `json:"relatedSalesId"`
 		Password       string `json:"password"`
+		Status         string `json:"status"`
 	}
 	if err := c.ShouldBindJSON(&updateData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求数据格式不正确"})
@@ -320,6 +321,10 @@ func UpdateAgent(c *gin.Context) {
 
 	// 设置更新时间
 	update["updatedat"] = time.Now()
+
+	if updateData.Status != "" {
+		update["status"] = updateData.Status
+	}
 
 	// 执行更新操作
 	result, err := agentsCollection.UpdateOne(ctx, bson.M{"_id": objID}, bson.M{"$set": update})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -355,6 +356,81 @@ func CheckDuplicateCustomer(c *gin.Context) {
 	})
 }
 
+func CheckDuplicateCustomer2(c *gin.Context) {
+	// 1. 解析请求体
+	var requestBody struct {
+		CustomerNames []string `json:"customerNames"`
+	}
+
+	if err := c.ShouldBindJSON(&requestBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "无效的请求数据",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 2. 验证输入 - 必须且只能有1个客户名称
+	if len(requestBody.CustomerNames) != 1 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "请求参数错误",
+			"details": "必须且只能提供一个客户名称",
+		})
+		return
+	}
+
+	searchName := strings.TrimSpace(requestBody.CustomerNames[0])
+	if searchName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "请求参数错误",
+			"details": "客户名称不能为空",
+		})
+		return
+	}
+
+	ctx := context.Background()
+	collection := repository.Collection(repository.CustomersCollection)
+
+	// 3. 构建模糊搜索条件（不区分大小写）
+	filter := bson.M{
+		"name": bson.M{
+			"$regex":   regexp.QuoteMeta(searchName),
+			"$options": "i", // i表示不区分大小写
+		},
+	}
+
+	// 4. 执行查询（限制返回100条结果防止数据量过大）
+	cursor, err := collection.Find(
+		ctx,
+		filter,
+		options.Find().
+			SetProjection(bson.M{"name": 1}).
+			SetLimit(100),
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "查询失败",
+			"details": err.Error(),
+		})
+		return
+	}
+	defer cursor.Close(ctx)
+
+	// 5. 处理结果
+	var results []models.Customer
+	if err := cursor.All(ctx, &results); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "数据处理失败",
+			"details": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"customers":      results,
+		"duplicateCount": len(results),
+	})
+}
+
 // CreateCustomer 创建客户
 func CreateCustomer(c *gin.Context) {
 	// 获取当前用户信息
@@ -575,10 +651,10 @@ func BulkImportCustomers(c *gin.Context) {
 
 	ctx := context.Background()
 	db := repository.GetDB()
-	customersCollection := db.Collection("4d2a803d_customers")
-	usersCollection := db.Collection("4d2a803d_users")
-	agentsCollection := db.Collection("4d2a803d_agents")
-	productsCollection := db.Collection("4d2a803d_products")
+	customersCollection := db.Collection("customers")
+	usersCollection := db.Collection("users")
+	agentsCollection := db.Collection("agents")
+	productsCollection := db.Collection("products")
 
 	// 验证产品需求
 	utils.LogInfo(nil, "开始验证产品需求合法性...")
@@ -601,7 +677,7 @@ func BulkImportCustomers(c *gin.Context) {
 	if len(allProductNames) > 0 {
 		utils.LogInfo(map[string]interface{}{
 			"count": len(allProductNames),
-		}, "需要验证的产品名称数量")
+		}, "需要验证的产品名称数量 ")
 
 		productNameArray := make([]string, 0, len(allProductNames))
 		for name := range allProductNames {
