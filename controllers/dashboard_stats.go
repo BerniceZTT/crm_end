@@ -338,20 +338,13 @@ func getProductCustomerRelation(ctx context.Context, customerQuery bson.M) ([]mo
 	if err = cursor.All(ctx, &products); err != nil {
 		return nil, err
 	}
-	productsByte, _ := json.Marshal(products)
-
-	// bernice todo
-	utils.Logger.Info().
-		Str("products", string(productsByte)).
-		Msg("测试测试")
 
 	// 计算每个产品关联的客户数量
 	var productRelationData []models.ChartDataItem
 
 	for _, product := range products {
-		// productID := product.ID.Hex()
 		query := customerQuery
-		query["productneeds"] = bson.M{"$elemMatch": bson.M{"$regex": product.ModelName}}
+		query["productneeds"] = bson.M{"$elemMatch": bson.M{"$regex": product.ID.Hex()}}
 		count, err := customersCollection.CountDocuments(ctx, query)
 		if err != nil {
 			return nil, err
@@ -365,7 +358,6 @@ func getProductCustomerRelation(ctx context.Context, customerQuery bson.M) ([]mo
 			})
 		}
 	}
-
 	// 排序并取前10项
 	// 注意：这里需要自己实现排序，或者使用Go的sort包
 	if len(productRelationData) > 10 {
