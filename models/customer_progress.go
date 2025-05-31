@@ -8,20 +8,14 @@ import (
 
 // 客户进展状态常量
 const (
-	CustomerProgressSampleEvaluation = "样板评估"
-	CustomerProgressTesting          = "打样测试"
-	CustomerProgressSmallBatch       = "小批量导入"
-	CustomerProgressMassProduction   = "批量出货"
-	CustomerProgressPublicPool       = "进入公海"
+	CustomerProgressNormal     = "正常"
+	CustomerProgressPublicPool = "进入公海"
 )
 
 // IsValidCustomerProgress 验证进展状态是否有效
 func IsValidCustomerProgress(progress string) bool {
 	validProgress := []string{
-		CustomerProgressSampleEvaluation,
-		CustomerProgressTesting,
-		CustomerProgressSmallBatch,
-		CustomerProgressMassProduction,
+		CustomerProgressNormal,
 		CustomerProgressPublicPool,
 	}
 

@@ -25,7 +25,9 @@ func RegisterRoutes(router *gin.Engine) {
 	RegisterCustomerAssignmentRoutes(router)
 	RegisterChangeCustomerRoutes(router)
 	RegisterDashboardStatsRoutes(router)
-	RegisterCustomerProgressRoutes(router)
+	RegisterProjectRoutes(router)
+	RegisterProjectFollowUpRoutes(router)
+	RegisterProjectProgressRoutes(router)
 
 	// 健康检查路由
 	router.GET("/api/health", func(c *gin.Context) {

@@ -19,18 +19,21 @@ import (
 
 const (
 	// 集合名
-	UsersCollection               = "users"
-	AgentsCollection              = "agents"
-	ProductsCollection            = "products"
-	CustomersCollection           = "customers"
-	InventoryCollection           = "inventory"
-	FollowUpCollection            = "followUpRecords"
-	CustAssignCollection          = "customerAssignmentHistory"
-	CustProgressCollection        = "customerProgressHistory"
-	CustomerProgressCollection    = "customer_progress"
-	CustomerAssignmentsCollection = "customerAssignments"
-	InventoryRecordsCollection    = "inventory_records"
-	ApiOperationLogsCollection    = "apiOperationLogs"
+	UsersCollection                  = "users"
+	AgentsCollection                 = "agents"
+	ProductsCollection               = "products"
+	CustomersCollection              = "customers"
+	InventoryCollection              = "inventory"
+	FollowUpCollection               = "followUpRecords"
+	CustAssignCollection             = "customerAssignmentHistory"
+	CustProgressCollection           = "customerProgressHistory"
+	CustomerProgressCollection       = "customer_progress"
+	CustomerAssignmentsCollection    = "customerAssignments"
+	InventoryRecordsCollection       = "inventory_records"
+	ApiOperationLogsCollection       = "apiOperationLogs"
+	ProjectsCollection               = "projects"
+	ProjectFollowUpRecordsCollection = "projectFollowUpRecord"
+	ProjectProgressHistoryCollection = "projectProgressHistory"
 )
 
 var (
@@ -198,6 +201,9 @@ func InitializeCollections() error {
 		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
 		ApiOperationLogsCollection,
+		ProjectsCollection,
+		ProjectFollowUpRecordsCollection,
+		ProjectProgressHistoryCollection,
 	}
 
 	for _, collName := range collections {
@@ -293,6 +299,9 @@ func GetDatabaseStatus() (map[string]interface{}, error) {
 		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
 		ApiOperationLogsCollection,
+		ProjectsCollection,
+		ProjectFollowUpRecordsCollection,
+		ProjectProgressHistoryCollection,
 	}
 
 	result := make(map[string]interface{})

@@ -414,28 +414,28 @@ func getProductProgressDistribution(ctx context.Context, customerQuery bson.M) (
 		query["productneeds"] = bson.M{"$elemMatch": bson.M{"$regex": productID}}
 
 		sampleQuery := query
-		sampleQuery["progress"] = string(models.CustomerProgressSampleEvaluation)
+		sampleQuery["progress"] = string(models.CustomerProgressNormal)
 		sampleCount, err := customersCollection.CountDocuments(ctx, sampleQuery)
 		if err != nil {
 			return nil, err
 		}
 
 		testingQuery := query
-		testingQuery["progress"] = string(models.CustomerProgressTesting)
+		testingQuery["progress"] = string(models.CustomerProgressNormal)
 		testingCount, err := customersCollection.CountDocuments(ctx, testingQuery)
 		if err != nil {
 			return nil, err
 		}
 
 		smallBatchQuery := query
-		smallBatchQuery["progress"] = string(models.CustomerProgressSmallBatch)
+		smallBatchQuery["progress"] = string(models.CustomerProgressNormal)
 		smallBatchCount, err := customersCollection.CountDocuments(ctx, smallBatchQuery)
 		if err != nil {
 			return nil, err
 		}
 
 		massProductionQuery := query
-		massProductionQuery["progress"] = string(models.CustomerProgressMassProduction)
+		massProductionQuery["progress"] = string(models.CustomerProgressNormal)
 		massProductionCount, err := customersCollection.CountDocuments(ctx, massProductionQuery)
 		if err != nil {
 			return nil, err

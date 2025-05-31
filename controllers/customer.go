@@ -80,13 +80,7 @@ func GetCustomerList(c *gin.Context) {
 		filter["importance"] = importance
 	}
 
-	if progress != "" {
-		filter["progress"] = progress
-	}
-
-	if isInPublicPool != "" {
-		filter["isinpublicpool"] = isInPublicPool == "true"
-	}
+	filter["isinpublicpool"] = isInPublicPool == "true"
 
 	if models.UserRole(user.Role) == models.UserRoleSUPER_ADMIN {
 		// 超级管理员可以查看所有客户

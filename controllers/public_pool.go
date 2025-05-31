@@ -291,7 +291,7 @@ func AssignPublicPoolCustomer(c *gin.Context) {
 	update := bson.M{
 		"$set": bson.M{
 			"isinpublicpool":    false,
-			"progress":          models.CustomerProgressSampleEvaluation, // 从公海池取出默认为"样板评估"
+			"progress":          models.CustomerProgressNormal,
 			"previousOwnerId":   customer.PreviousOwnerID,
 			"previousOwnerName": customer.PreviousOwnerName,
 			"previousOwnerType": customer.PreviousOwnerType,

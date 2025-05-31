@@ -101,7 +101,7 @@ func AssignCustomer(c *gin.Context) {
 	// 如果客户在公海池，则移出公海池，并更新进展状态
 	if customer.IsInPublicPool {
 		updateData["isinpublicpool"] = false
-		updateData["progress"] = models.CustomerProgressSampleEvaluation
+		updateData["progress"] = models.CustomerProgressNormal
 	}
 
 	// 处理代理商信息
