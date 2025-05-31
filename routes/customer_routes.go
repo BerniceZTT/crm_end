@@ -15,6 +15,7 @@ func RegisterCustomerRoutes(router *gin.Engine) {
 	customerRoutes.GET("/", controllers.GetCustomerList)
 	customerRoutes.POST("/check-duplicates", controllers.CheckDuplicateCustomer)
 	customerRoutes.POST("/check-duplicates/for_customer", controllers.CheckDuplicateCustomer2)
+	customerRoutes.GET("/complete-company-names", controllers.CompleteCompanyNamesHandler)
 	customerRoutes.POST("/", controllers.CreateCustomer)
 	customerRoutes.POST("/bulk-import", controllers.BulkImportCustomers)
 	customerRoutes.GET("/:id", controllers.GetCustomerDetail)

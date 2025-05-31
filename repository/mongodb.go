@@ -30,6 +30,7 @@ const (
 	CustomerProgressCollection    = "customer_progress"
 	CustomerAssignmentsCollection = "customerAssignments"
 	InventoryRecordsCollection    = "inventory_records"
+	ApiOperationLogsCollection    = "apiOperationLogs"
 )
 
 var (
@@ -196,6 +197,7 @@ func InitializeCollections() error {
 		CustomerProgressCollection,
 		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
+		ApiOperationLogsCollection,
 	}
 
 	for _, collName := range collections {
@@ -290,6 +292,7 @@ func GetDatabaseStatus() (map[string]interface{}, error) {
 		CustomerProgressCollection,
 		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
+		ApiOperationLogsCollection,
 	}
 
 	result := make(map[string]interface{})

@@ -47,6 +47,7 @@ func main() {
 	router.Use(middleware.Recovery())
 	router.Use(middleware.CORS())
 	router.Use(middleware.ErrorHandler())
+	router.Use(middleware.OperationLoggerMiddleware())
 
 	// 注册路由
 	routes.RegisterRoutes(router)

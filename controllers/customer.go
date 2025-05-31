@@ -2,8 +2,13 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	"log"
+	"math/rand"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1419,4 +1424,241 @@ func getMapKeys(m map[string]interface{}) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// 阿里云API配置
+const (
+	AliCloudURL   = "https://cardnotwo.market.alicloudapi.com/searchCompany"
+	AliCloudAppID = "244025974ef44b0fa1e7e0924feed841"
+)
+
+// CompanyInfo 公司信息结构体
+type CompanyInfo struct {
+	RegNumber      string `json:"regNumber"`
+	RegType        string `json:"regType"`
+	CompanyName    string `json:"companyName"`
+	CompanyType    string `json:"companyType"`
+	RegMoney       string `json:"regMoney"`
+	FaRen          string `json:"faRen"`
+	IssueTime      string `json:"issueTime"`
+	CreditCode     string `json:"creditCode"`
+	ProvinceName   string `json:"provinceName"`
+	BusinessStatus string `json:"businessStatus"`
+}
+
+// AliCloudResponse 阿里云API响应结构体
+type AliCloudResponse struct {
+	Result struct {
+		Data []map[string]interface{} `json:"data"`
+	} `json:"result"`
+	Data []map[string]interface{} `json:"data"`
+}
+
+// APIResponse API响应结构体
+type APIResponse struct {
+	ErrorCode int         `json:"error_code"`
+	Reason    string      `json:"reason"`
+	Result    interface{} `json:"result"`
+	OrderSign string      `json:"ordersign,omitempty"`
+}
+
+// ResultData 结果数据结构
+type ResultData struct {
+	Total int           `json:"total"`
+	Data  []CompanyInfo `json:"data"`
+}
+
+func CompleteCompanyNamesHandler(c *gin.Context) {
+	log.Println("[API] 获取公司名称补充请求")
+
+	// 获取查询参数
+	prefix := c.Query("prefix")
+
+	// 验证参数
+	if prefix == "" || strings.TrimSpace(prefix) == "" {
+		log.Println("[API] 缺少prefix参数")
+		c.JSON(http.StatusBadRequest, APIResponse{
+			ErrorCode: 1,
+			Reason:    "请提供公司名称前缀",
+			Result:    nil,
+		})
+		return
+	}
+
+	log.Printf("[API] 查询公司名称前缀: %s", prefix)
+
+	// 调用阿里云API
+	companyList, err := callAliCloudAPI(prefix)
+	if err != nil {
+		log.Printf("[API] 调用阿里云API失败: %v", err)
+		errorMsg := "服务器内部错误"
+		if strings.Contains(err.Error(), "阿里云API请求失败") {
+			errorMsg = "公司信息查询服务暂时不可用"
+		} else if strings.Contains(err.Error(), "网络连接失败") {
+			errorMsg = "网络连接失败，请稍后重试"
+		}
+
+		c.JSON(http.StatusInternalServerError, APIResponse{
+			ErrorCode: 1,
+			Reason:    errorMsg,
+			Result:    nil,
+		})
+		return
+	}
+
+	// 过滤掉空的公司名称
+	filteredCompanyList := []CompanyInfo{}
+	for _, company := range companyList {
+		if company.CompanyName != "" && strings.TrimSpace(company.CompanyName) != "" {
+			filteredCompanyList = append(filteredCompanyList, company)
+		}
+	}
+
+	log.Printf("[API] 处理前公司数量: %d, 过滤后公司数量: %d", len(companyList), len(filteredCompanyList))
+
+	// 生成订单签名
+	rand.Seed(time.Now().UnixNano())
+	orderSign := fmt.Sprintf("%d%d", time.Now().Unix(), rand.Intn(1000000000000000))
+
+	c.JSON(http.StatusOK, APIResponse{
+		ErrorCode: 0,
+		Reason:    "查询成功",
+		Result: ResultData{
+			Total: len(filteredCompanyList),
+			Data:  filteredCompanyList,
+		},
+		OrderSign: orderSign,
+	})
+}
+
+func callAliCloudAPI(prefix string) ([]CompanyInfo, error) {
+	// 构建查询参数
+	params := url.Values{}
+	params.Set("com", strings.TrimSpace(prefix))
+	params.Set("page", "1")
+	params.Set("query", "all")
+
+	apiURL := fmt.Sprintf("%s?%s", AliCloudURL, params.Encode())
+	log.Printf("[API] 调用阿里云API: %s", apiURL)
+
+	// 创建HTTP请求
+	req, err := http.NewRequest("GET", apiURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("Authorization", "APPCODE "+AliCloudAppID)
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+
+	// 发送请求
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("网络连接失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("阿里云API请求失败: %s", resp.Status)
+	}
+
+	// 读取响应体
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("读取响应体失败: %w", err)
+	}
+
+	log.Printf("[API] 阿里云API原始响应: %s", string(body))
+
+	// 解析响应
+	return parseAliCloudResponse(body)
+}
+
+func parseAliCloudResponse(body []byte) ([]CompanyInfo, error) {
+	var result []CompanyInfo
+	var aliResp AliCloudResponse
+
+	// 尝试解析为AliCloudResponse结构
+	if err := json.Unmarshal(body, &aliResp); err == nil {
+		// 尝试解析为新的result.data结构
+		if aliResp.Result.Data != nil {
+			log.Printf("[API] 发现阿里云数据结构：result.data，包含 %d 条记录", len(aliResp.Result.Data))
+			result = parseCompanyData(aliResp.Result.Data)
+		} else if aliResp.Data != nil {
+			// 尝试解析为旧的数据结构
+			log.Printf("[API] 发现阿里云数据结构：data，包含 %d 条记录", len(aliResp.Data))
+			result = parseCompanyData(aliResp.Data)
+		} else {
+			// 尝试解析为直接数组
+			var directData []map[string]interface{}
+			if err := json.Unmarshal(body, &directData); err == nil {
+				log.Printf("[API] 发现阿里云数据结构：直接数组，包含 %d 条记录", len(directData))
+				result = parseCompanyData(directData)
+			} else {
+				log.Printf("[API] 阿里云API响应格式不符合预期")
+				return nil, fmt.Errorf("阿里云API响应格式不符合预期")
+			}
+		}
+	} else {
+		// 尝试解析为直接数组
+		var directData []map[string]interface{}
+		if err := json.Unmarshal(body, &directData); err == nil {
+			log.Printf("[API] 发现阿里云数据结构：直接数组，包含 %d 条记录", len(directData))
+			result = parseCompanyData(directData)
+		} else {
+			log.Printf("[API] 阿里云API响应格式不符合预期: %v", err)
+			return nil, fmt.Errorf("阿里云API响应格式不符合预期: %w", err)
+		}
+	}
+
+	return result, nil
+}
+
+func parseCompanyData(data []map[string]interface{}) []CompanyInfo {
+	var companyList []CompanyInfo
+
+	for _, item := range data {
+		company := CompanyInfo{
+			RegNumber:      getStringField(item, "regNumber", "regno"),
+			RegType:        getStringField(item, "regType", ""),
+			CompanyName:    getStringField(item, "companyName", "name", "entname"),
+			CompanyType:    getStringField(item, "companyType", "enttype"),
+			RegMoney:       getStringField(item, "regMoney", "regcap"),
+			FaRen:          getStringField(item, "faRen", "frname", "oper_name"),
+			IssueTime:      getStringField(item, "issueTime", "startdate", "regdate"),
+			CreditCode:     getStringField(item, "creditCode", "creditno", "uscc"),
+			ProvinceName:   getStringField(item, "provinceName", "province"),
+			BusinessStatus: getStringField(item, "businessStatus", "entstatus", "status"),
+		}
+
+		// 设置默认值
+		if company.RegType == "" {
+			company.RegType = "公司"
+		}
+		if company.CompanyType == "" {
+			company.CompanyType = "法人"
+		}
+		if company.BusinessStatus == "" {
+			company.BusinessStatus = "存续"
+		}
+
+		companyList = append(companyList, company)
+	}
+
+	return companyList
+}
+
+// getStringField 从map中获取字符串字段（尝试多个可能的键）
+func getStringField(data map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := data[key]; ok {
+			if str, ok := val.(string); ok {
+				return str
+			}
+		}
+	}
+	return ""
 }
