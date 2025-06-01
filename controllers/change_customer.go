@@ -172,9 +172,6 @@ func AssignCustomer(c *gin.Context) {
 				operationType = "认领"
 			}
 		}
-		utils.LogInfo(map[string]interface{}{
-			"operationType": operationType,
-		}, "bernicebernice")
 		// 记录分配历史
 		err = AddAssignmentHistory(ctx, models.CustomerAssignmentHistory{
 			CustomerID:   customerId,

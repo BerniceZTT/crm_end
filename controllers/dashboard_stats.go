@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math"
 	"net/http"
@@ -444,13 +443,6 @@ func getProductCustomerRelation(ctx context.Context, baseProjectQuery bson.M,
 		return nil, err
 	}
 
-	bytes2, _ := json.Marshal(products)
-
-	utils.LogInfo(map[string]interface{}{
-		"products": string(bytes2),
-		"len":      len(products),
-	}, "[数据看板] bernicebernice")
-
 	var productRelationData []models.ChartDataItem
 	for _, product := range products {
 		distinctCustomers, err := projectsCollection.Distinct(ctx, "customerId", bson.M{
@@ -463,13 +455,6 @@ func getProductCustomerRelation(ctx context.Context, baseProjectQuery bson.M,
 		}
 
 		customerCount := len(distinctCustomers)
-		bytes1, _ := json.Marshal(baseProjectQuery)
-
-		utils.LogInfo(map[string]interface{}{
-			"productId":        product.ID.Hex(),
-			"baseProjectQuery": string(bytes1),
-			"customerCount":    customerCount,
-		}, "[数据看板] bernicebernice")
 		if customerCount > 0 {
 			productName := product.ModelName
 			if len(productName) > 6 {

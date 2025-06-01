@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -1355,8 +1356,8 @@ func getMapKeys(m map[string]interface{}) []string {
 
 // 阿里云API配置
 const (
-	AliCloudURL   = "https://cardnotwo.market.alicloudapi.com/searchCompany"
-	AliCloudAppID = "244025974ef44b0fa1e7e0924feed841"
+	AliCloudURL   = "https://comserver.market.alicloudapi.com/searchCompany"
+	AliCloudAppID = "b5849b8dac554e7e93af538180a24382"
 )
 
 // CompanyInfo 公司信息结构体
@@ -1375,10 +1376,9 @@ type CompanyInfo struct {
 
 // AliCloudResponse 阿里云API响应结构体
 type AliCloudResponse struct {
-	Result struct {
-		Data []map[string]interface{} `json:"data"`
-	} `json:"result"`
-	Data []map[string]interface{} `json:"data"`
+	ErrorCode int             `json:"error_code"`
+	Reason    string          `json:"reason"`
+	Result    json.RawMessage `json:"result"` // 使用 json.RawMessage 延迟解析
 }
 
 // APIResponse API响应结构体
@@ -1389,8 +1389,8 @@ type APIResponse struct {
 	OrderSign string      `json:"ordersign,omitempty"`
 }
 
-// ResultData 结果数据结构
-type ResultData struct {
+// ResultWithData 包含 total 和 data 的结构体
+type ResultWithData struct {
 	Total int           `json:"total"`
 	Data  []CompanyInfo `json:"data"`
 }
@@ -1450,7 +1450,7 @@ func CompleteCompanyNamesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, APIResponse{
 		ErrorCode: 0,
 		Reason:    "查询成功",
-		Result: ResultData{
+		Result: ResultWithData{
 			Total: len(filteredCompanyList),
 			Data:  filteredCompanyList,
 		},
@@ -1505,87 +1505,33 @@ func callAliCloudAPI(prefix string) ([]CompanyInfo, error) {
 }
 
 func parseAliCloudResponse(body []byte) ([]CompanyInfo, error) {
-	var result []CompanyInfo
-	var aliResp AliCloudResponse
-
-	// 尝试解析为AliCloudResponse结构
-	if err := json.Unmarshal(body, &aliResp); err == nil {
-		// 尝试解析为新的result.data结构
-		if aliResp.Result.Data != nil {
-			log.Printf("[API] 发现阿里云数据结构：result.data，包含 %d 条记录", len(aliResp.Result.Data))
-			result = parseCompanyData(aliResp.Result.Data)
-		} else if aliResp.Data != nil {
-			// 尝试解析为旧的数据结构
-			log.Printf("[API] 发现阿里云数据结构：data，包含 %d 条记录", len(aliResp.Data))
-			result = parseCompanyData(aliResp.Data)
-		} else {
-			// 尝试解析为直接数组
-			var directData []map[string]interface{}
-			if err := json.Unmarshal(body, &directData); err == nil {
-				log.Printf("[API] 发现阿里云数据结构：直接数组，包含 %d 条记录", len(directData))
-				result = parseCompanyData(directData)
-			} else {
-				log.Printf("[API] 阿里云API响应格式不符合预期")
-				return nil, fmt.Errorf("阿里云API响应格式不符合预期")
-			}
-		}
-	} else {
-		// 尝试解析为直接数组
-		var directData []map[string]interface{}
-		if err := json.Unmarshal(body, &directData); err == nil {
-			log.Printf("[API] 发现阿里云数据结构：直接数组，包含 %d 条记录", len(directData))
-			result = parseCompanyData(directData)
-		} else {
-			log.Printf("[API] 阿里云API响应格式不符合预期: %v", err)
-			return nil, fmt.Errorf("阿里云API响应格式不符合预期: %w", err)
-		}
+	var response AliCloudResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, err
 	}
 
-	return result, nil
-}
-
-func parseCompanyData(data []map[string]interface{}) []CompanyInfo {
-	var companyList []CompanyInfo
-
-	for _, item := range data {
-		company := CompanyInfo{
-			RegNumber:      getStringField(item, "regNumber", "regno"),
-			RegType:        getStringField(item, "regType", ""),
-			CompanyName:    getStringField(item, "companyName", "name", "entname"),
-			CompanyType:    getStringField(item, "companyType", "enttype"),
-			RegMoney:       getStringField(item, "regMoney", "regcap"),
-			FaRen:          getStringField(item, "faRen", "frname", "oper_name"),
-			IssueTime:      getStringField(item, "issueTime", "startdate", "regdate"),
-			CreditCode:     getStringField(item, "creditCode", "creditno", "uscc"),
-			ProvinceName:   getStringField(item, "provinceName", "province"),
-			BusinessStatus: getStringField(item, "businessStatus", "entstatus", "status"),
+	// 检查错误码
+	if response.ErrorCode != 0 {
+		// 如果是查询无结果的情况，返回空切片和 nil 错误
+		if response.ErrorCode == 50002 && response.Reason == "查询无结果" {
+			return []CompanyInfo{}, nil
 		}
-
-		// 设置默认值
-		if company.RegType == "" {
-			company.RegType = "公司"
-		}
-		if company.CompanyType == "" {
-			company.CompanyType = "法人"
-		}
-		if company.BusinessStatus == "" {
-			company.BusinessStatus = "存续"
-		}
-
-		companyList = append(companyList, company)
+		// 其他错误情况，返回错误信息
+		return nil, errors.New(response.Reason)
 	}
 
-	return companyList
-}
-
-// getStringField 从map中获取字符串字段（尝试多个可能的键）
-func getStringField(data map[string]interface{}, keys ...string) string {
-	for _, key := range keys {
-		if val, ok := data[key]; ok {
-			if str, ok := val.(string); ok {
-				return str
-			}
-		}
+	// 尝试解析 Result 为 ResultWithData
+	var resultWithData ResultWithData
+	if err := json.Unmarshal(response.Result, &resultWithData); err == nil {
+		return resultWithData.Data, nil
 	}
-	return ""
+
+	// 尝试解析 Result 为空数组
+	var emptyArray []interface{}
+	if err := json.Unmarshal(response.Result, &emptyArray); err == nil {
+		return []CompanyInfo{}, nil
+	}
+
+	// 如果无法解析，返回错误
+	return nil, errors.New("无法解析 Result 字段")
 }
