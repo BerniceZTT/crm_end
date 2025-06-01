@@ -264,7 +264,7 @@ func InitializeAdminAccount() error {
 	adminUser := models.User{
 		Username:  "admin",
 		Password:  utils.HashPassword("admin123"),
-		Phone:     "13800000000",
+		Phone:     "15800768020",
 		Role:      models.UserRoleSUPER_ADMIN,
 		Status:    models.UserStatusAPPROVED,
 		CreatedAt: time.Now(),
@@ -357,7 +357,7 @@ func GetDB() *mongo.Database {
 
 		// 设置连接选项
 		clientOptions := options.Client().ApplyURI(
-			"mongodb://qianxin:QianXin123@47.113.230.108:27017/crm?authSource=admin",
+			"mongodb://qianxin:QianXin123@127.0.0.1:27017/crm?authSource=admin",
 		)
 
 		// 连接到MongoDB

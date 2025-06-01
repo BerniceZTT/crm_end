@@ -93,3 +93,17 @@ func main() {
 
 	utils.Logger.Info().Msg("服务器已优雅关闭")
 }
+
+// sudo nano /usr/local/bin/mongodb_backup.sh
+
+// # 解压备份文件
+// tar -xzvf /backup/mongodb/mongodb_backup_20240101_030000.tar.gz -C /tmp
+
+// # 执行恢复
+// mongorestore \
+//   --host localhost \
+//   --port 27017 \
+//   --username admin \
+//   --password your_password \
+//   --authenticationDatabase admin \
+//   /tmp/mongodb_backup_20240101_030000

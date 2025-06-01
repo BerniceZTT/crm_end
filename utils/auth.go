@@ -17,7 +17,6 @@ var jwtSecret = []byte(config.LoadConfig().JWTKey)
 // SpecialUserPasswords 特殊用户账号的密码映射表
 var SpecialUserPasswords = map[string]string{
 	"admin":   "admin123",
-	"原厂销售测试1": "ztt01822",
 }
 
 // HashPassword 哈希密码

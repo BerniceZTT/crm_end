@@ -20,7 +20,7 @@ func LoadConfig() *Config {
 	port, _ := strconv.Atoi(getEnv("PORT", "8080"))
 	return &Config{
 		Port:     port,
-		MongoURI: fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=%s", "qianxin", "QianXin123", "47.113.230.108", "27017", "crm", "admin"),
+		MongoURI: fmt.Sprintf("mongodb://%s:%s@%s:%s/%s?authSource=%s", "qianxin", "QianXin123", "127.0.0.1", "27017", "crm", "admin"),
 		MongoDB:  getEnv("MONGO_DB", "crm"),
 		JWTKey:   getEnv("JWT_KEY", "your-secret-key"), // 实际环境应替换为安全密钥
 		Debug:    getEnv("GIN_MODE", "debug") == "debug",
