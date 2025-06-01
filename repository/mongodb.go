@@ -26,9 +26,7 @@ const (
 	InventoryCollection              = "inventory"
 	FollowUpCollection               = "followUpRecords"
 	CustAssignCollection             = "customerAssignmentHistory"
-	CustProgressCollection           = "customerProgressHistory"
 	CustomerProgressCollection       = "customer_progress"
-	CustomerAssignmentsCollection    = "customerAssignments"
 	InventoryRecordsCollection       = "inventory_records"
 	ApiOperationLogsCollection       = "apiOperationLogs"
 	ProjectsCollection               = "projects"
@@ -196,9 +194,7 @@ func InitializeCollections() error {
 		InventoryCollection,
 		FollowUpCollection,
 		CustAssignCollection,
-		CustProgressCollection,
 		CustomerProgressCollection,
-		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
 		ApiOperationLogsCollection,
 		ProjectsCollection,
@@ -294,9 +290,7 @@ func GetDatabaseStatus() (map[string]interface{}, error) {
 		InventoryCollection,
 		FollowUpCollection,
 		CustAssignCollection,
-		CustProgressCollection,
 		CustomerProgressCollection,
-		CustomerAssignmentsCollection,
 		InventoryRecordsCollection,
 		ApiOperationLogsCollection,
 		ProjectsCollection,

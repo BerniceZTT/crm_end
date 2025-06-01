@@ -567,25 +567,10 @@ func CreateCustomer(c *gin.Context) {
 			OperationType:        operationType,
 		}
 
-		err = AddCustomerAssignmentHistoryFn(ctx, assignmentHistory)
+		err = AddAssignmentHistory(ctx, assignmentHistory)
 		if err != nil {
 			utils.HandleError(c, err)
 		}
-	}
-
-	progressHistory := models.CustomerProgressHistory{
-		CustomerID:   newCustomer.ID.Hex(),
-		CustomerName: requestData.Name,
-		FromProgress: "无",
-		ToProgress:   requestData.Progress,
-		OperatorID:   user.ID,
-		OperatorName: user.Username,
-		Remark:       "客户创建",
-	}
-
-	err = AddCustomerProgressHistoryFn(ctx, progressHistory)
-	if err != nil {
-		utils.HandleError(c, err)
 	}
 
 	utils.LogInfo(map[string]interface{}{
@@ -900,33 +885,15 @@ func BulkImportCustomers(c *gin.Context) {
 				OperatorID:           user.ID,
 				OperatorName:         user.Username,
 				OperationType:        operationType,
-				CreatedAt:            now,
 			}
 
-			if err := AddCustomerAssignmentHistoryFn(ctx, assignmentHistory); err != nil {
+			if err := AddAssignmentHistory(ctx, assignmentHistory); err != nil {
 				utils.LogError(err, map[string]interface{}{
 					"customerId": customerId,
 				}, "添加客户分配历史失败")
 			}
 		}
 
-		// 添加进展历史
-		progressHistory := models.CustomerProgressHistory{
-			CustomerID:   customerId,
-			CustomerName: customer.Name,
-			FromProgress: "无",
-			ToProgress:   customer.Progress,
-			OperatorID:   user.ID,
-			OperatorName: user.Username,
-			Remark:       "客户批量导入创建",
-			CreatedAt:    now,
-		}
-
-		if err := AddCustomerProgressHistoryFn(ctx, progressHistory); err != nil {
-			utils.LogError(err, map[string]interface{}{
-				"customerId": customerId,
-			}, "添加客户进展历史失败")
-		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -1145,25 +1112,7 @@ func UpdateCustomer(c *gin.Context) {
 			OperationType:        "分配",
 		}
 
-		err = AddCustomerAssignmentHistoryFn(ctx, assignmentHistory)
-		if err != nil {
-			utils.HandleError(c, err)
-		}
-	}
-
-	// 记录客户进展变更历史
-	if len(progressChanged) != 0 {
-		progressHistory := models.CustomerProgressHistory{
-			CustomerID:   id,
-			CustomerName: customer.Name,
-			FromProgress: customer.Progress,
-			ToProgress:   updateData["progress"].(string),
-			OperatorID:   user.ID,
-			OperatorName: user.Username,
-			Remark:       "更新客户进展",
-		}
-
-		err = AddCustomerProgressHistoryFn(ctx, progressHistory)
+		err = AddAssignmentHistory(ctx, assignmentHistory)
 		if err != nil {
 			utils.HandleError(c, err)
 		}
@@ -1361,23 +1310,7 @@ func MoveCustomerToPublic(c *gin.Context) {
 		OperationType:        "移入公海池",
 	}
 
-	err = AddCustomerAssignmentHistoryFn(ctx, assignmentHistory)
-	if err != nil {
-		utils.HandleError(c, err)
-	}
-
-	// 记录客户进展历史记录 - 从原进展到"进入公海"
-	progressHistory := models.CustomerProgressHistory{
-		CustomerID:   id,
-		CustomerName: customer.Name,
-		FromProgress: customer.Progress,
-		ToProgress:   models.CustomerProgressPublicPool,
-		OperatorID:   user.ID,
-		OperatorName: user.Username,
-		Remark:       "移入公海池",
-	}
-
-	err = AddCustomerProgressHistoryFn(ctx, progressHistory)
+	err = AddAssignmentHistory(ctx, assignmentHistory)
 	if err != nil {
 		utils.HandleError(c, err)
 	}

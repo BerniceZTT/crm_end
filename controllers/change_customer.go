@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -96,12 +98,8 @@ func AssignCustomer(c *gin.Context) {
 		"relatedsalesname": salesUser.Username,
 		"lastupdatetime":   time.Now(),
 		"updatedat":        time.Now(),
-	}
-
-	// 如果客户在公海池，则移出公海池，并更新进展状态
-	if customer.IsInPublicPool {
-		updateData["isinpublicpool"] = false
-		updateData["progress"] = models.CustomerProgressNormal
+		"isinpublicpool":   false,
+		"progress":         models.CustomerProgressNormal,
 	}
 
 	// 处理代理商信息
@@ -157,18 +155,15 @@ func AssignCustomer(c *gin.Context) {
 	}
 
 	// 检查是否需要记录分配历史
-	salesChanged := customer.RelatedSalesID != assignRequest.SalesId
-	agentChanged := (assignRequest.AgentId != "" && customer.RelatedAgentID != assignRequest.AgentId) ||
-		(assignRequest.AgentId == "" && assignRequest.AgentId != customer.RelatedAgentID)
+	salesChanged := assignRequest.SalesId != customer.RelatedSalesID
+	agentChanged := assignRequest.AgentId != customer.RelatedAgentID
 
 	// 只在有变化时记录历史
 	if salesChanged || agentChanged {
 		operationType := "分配"
 
 		// 确定操作类型
-		if assignRequest.SalesId == "" && assignRequest.AgentId == "" {
-			operationType = "移入公海池"
-		} else if customer.IsInPublicPool {
+		if customer.IsInPublicPool {
 			operationType = "认领"
 		} else {
 			// 判断是否为认领：当前用户是被分配的销售或代理商
@@ -177,7 +172,9 @@ func AssignCustomer(c *gin.Context) {
 				operationType = "认领"
 			}
 		}
-
+		utils.LogInfo(map[string]interface{}{
+			"operationType": operationType,
+		}, "bernicebernice")
 		// 记录分配历史
 		err = AddAssignmentHistory(ctx, models.CustomerAssignmentHistory{
 			CustomerID:   customerId,
@@ -196,17 +193,13 @@ func AssignCustomer(c *gin.Context) {
 			OperatorID:    user.ID,
 			OperatorName:  user.Username,
 			OperationType: operationType,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
 		})
 
 		if err != nil {
 			utils.HandleError(c, err)
-			// 不要因为记录历史失败而阻止整个分配流程
 		}
 	}
 
-	// 返回成功响应
 	c.JSON(http.StatusOK, gin.H{
 		"message": "客户分配成功",
 		"data": gin.H{
@@ -360,7 +353,7 @@ func ChangeCustomerProgress(c *gin.Context) {
 
 // AddAssignmentHistory 添加客户分配历史记录
 func AddAssignmentHistory(ctx context.Context, historyData models.CustomerAssignmentHistory) error {
-	collection := repository.Collection(repository.CustomerAssignmentsCollection)
+	collection := repository.Collection(repository.CustAssignCollection)
 
 	// 确保有创建时间字段
 	if historyData.CreatedAt.IsZero() {
@@ -369,9 +362,13 @@ func AddAssignmentHistory(ctx context.Context, historyData models.CustomerAssign
 	if historyData.UpdatedAt.IsZero() {
 		historyData.UpdatedAt = time.Now()
 	}
+	bytes, _ := json.Marshal(historyData)
+	utils.LogInfo(map[string]interface{}{
+		"historyData": string(bytes),
+	}, "添加客户分配历史记录成功")
 
 	// 插入历史记录
-	_, err := collection.InsertOne(ctx, historyData)
+	result, err := collection.InsertOne(ctx, historyData)
 	if err != nil {
 		utils.LogError2("添加客户分配历史记录", err, map[string]interface{}{
 			"function": "AddAssignmentHistory",
@@ -379,11 +376,29 @@ func AddAssignmentHistory(ctx context.Context, historyData models.CustomerAssign
 
 		return err
 	}
+	if result == nil {
+		utils.LogError2("添加客户分配历史记录", fmt.Errorf("result == nil"), map[string]interface{}{
+			"function": "AddAssignmentHistory",
+		})
+
+		return fmt.Errorf("result == nil")
+	}
+
+	var insertedDoc models.CustomerAssignmentHistory
+	err = collection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&insertedDoc)
+	if err != nil {
+		utils.LogError2("查询刚插入的记录失败", err, nil)
+	} else {
+		utils.LogInfo(map[string]interface{}{
+			"insertedDoc": insertedDoc,
+		}, "成功查询到刚插入的记录")
+	}
 
 	utils.LogInfo(map[string]interface{}{
 		"customerId":    historyData.CustomerID,
 		"customerName":  historyData.CustomerName,
 		"operationType": historyData.OperationType,
+		"_id":           result.InsertedID,
 	}, "添加客户分配历史记录成功")
 
 	return nil

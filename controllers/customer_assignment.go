@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -109,16 +108,10 @@ func AddCustomerAssignmentHistory(c *gin.Context) {
 // GetAllCustomerAssignmentHistory 获取所有客户分配历史记录（可按条件筛选）
 func GetAllCustomerAssignmentHistory(c *gin.Context) {
 	// 获取查询参数
-	startDate := c.Query("startDate")
-	endDate := c.Query("endDate")
-	operationType := c.Query("operationType")
 	customerId := c.Query("customerId")
 
 	utils.LogInfo(map[string]interface{}{
-		"startDate":     startDate,
-		"endDate":       endDate,
-		"operationType": operationType,
-		"customerId":    customerId,
+		"customerId": customerId,
 	}, "获取客户分配历史记录")
 
 	// 构建查询过滤器
@@ -127,31 +120,6 @@ func GetAllCustomerAssignmentHistory(c *gin.Context) {
 	// 应用客户ID过滤
 	if customerId != "" {
 		filter["customerid"] = customerId
-	}
-
-	// 应用日期过滤
-	if startDate != "" || endDate != "" {
-		dateFilter := bson.M{}
-		if startDate != "" {
-			startTime, err := time.Parse(time.RFC3339, startDate)
-			if err == nil {
-				dateFilter["$gte"] = startTime
-			}
-		}
-		if endDate != "" {
-			endTime, err := time.Parse(time.RFC3339, endDate)
-			if err == nil {
-				dateFilter["$lte"] = endTime
-			}
-		}
-		if len(dateFilter) > 0 {
-			filter["createdat"] = dateFilter
-		}
-	}
-
-	// 应用操作类型过滤
-	if operationType != "" {
-		filter["operationtype"] = operationType
 	}
 
 	// 获取数据库上下文
@@ -182,51 +150,11 @@ func GetAllCustomerAssignmentHistory(c *gin.Context) {
 	utils.LogInfo(map[string]interface{}{
 		"count": len(assignmentHistory),
 		"filter": map[string]interface{}{
-			"startDate":     startDate,
-			"endDate":       endDate,
-			"operationType": operationType,
-			"customerId":    customerId,
+			"customerId": customerId,
 		},
 	}, "成功获取客户分配历史记录")
 
 	c.JSON(http.StatusOK, gin.H{
 		"history": assignmentHistory,
 	})
-}
-
-// AddCustomerAssignmentHistoryFn 添加客户分配历史记录的工具函数（可在其他服务中调用）
-func AddCustomerAssignmentHistoryFn(ctx context.Context, historyData models.CustomerAssignmentHistory) error {
-	// 验证必要字段
-	if historyData.CustomerID == "" || historyData.CustomerName == "" ||
-		historyData.OperatorID == "" || historyData.OperatorName == "" {
-		return &utils.AppError{Message: "缺少必要字段", StatusCode: http.StatusBadRequest}
-	}
-
-	// 确保有创建时间字段
-	now := time.Now()
-	if historyData.CreatedAt.IsZero() {
-		historyData.CreatedAt = now
-	}
-	if historyData.UpdatedAt.IsZero() {
-		historyData.UpdatedAt = now
-	}
-
-	// 获取分配历史集合
-	collection := repository.Collection(repository.CustAssignCollection)
-
-	// 添加历史记录
-	result, err := collection.InsertOne(ctx, historyData)
-	if err != nil {
-		return err
-	}
-
-	// 记录日志
-	utils.LogInfo(map[string]interface{}{
-		"id":            result.InsertedID.(primitive.ObjectID).Hex(),
-		"customerId":    historyData.CustomerID,
-		"customerName":  historyData.CustomerName,
-		"operationType": historyData.OperationType,
-	}, "添加客户分配历史记录成功")
-
-	return nil
 }

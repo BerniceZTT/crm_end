@@ -334,8 +334,6 @@ func AssignPublicPoolCustomer(c *gin.Context) {
 		OperatorID:    currentUser.ID,
 		OperatorName:  currentUser.Username,
 		OperationType: "分配",
-		CreatedAt:     now,
-		UpdatedAt:     now,
 	}
 
 	// 根据目标类型设置适当的销售或代理商信息

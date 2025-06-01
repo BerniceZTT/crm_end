@@ -164,32 +164,3 @@ type (
 		Role     UserRole `json:"role" binding:"omitempty"`
 	}
 )
-
-// ChartDataItem 图表数据项
-type ChartDataItem struct {
-	Name  string `json:"name" bson:"name"`
-	Value int    `json:"value" bson:"value"`
-}
-
-// DashboardDataResponse 数据看板响应
-type DashboardDataResponse struct {
-	CustomerCount               int                           `json:"customerCount"`
-	ProductCount                int                           `json:"productCount"`
-	AgentCount                  int                           `json:"agentCount"`
-	CustomerImportance          []ChartDataItem               `json:"customerImportance"`
-	CustomerProgress            []ChartDataItem               `json:"customerProgress"`
-	CustomerNature              []ChartDataItem               `json:"customerNature"`
-	ProductPackageType          []ChartDataItem               `json:"productPackageType"`
-	ProductStockLevel           []ChartDataItem               `json:"productStockLevel"`
-	ProductCustomerRelation     []ChartDataItem               `json:"productCustomerRelation"`
-	ProductProgressDistribution []ProductProgressDistribution `json:"productProgressDistribution"`
-}
-
-// ProductProgressDistribution 产品按客户进展阶段分布
-type ProductProgressDistribution struct {
-	ProductName    string `json:"productName" bson:"productName"`
-	Sample         int    `json:"sample" bson:"sample"`
-	Testing        int    `json:"testing" bson:"testing"`
-	SmallBatch     int    `json:"smallBatch" bson:"smallBatch"`
-	MassProduction int    `json:"massProduction" bson:"massProduction"`
-}
