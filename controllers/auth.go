@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -383,10 +384,52 @@ func ValidateToken(c *gin.Context) {
 		return
 	}
 
-	utils.Logger.Info().
-		Str("username", user.Username).
-		Str("role", user.Role).
-		Msg("Token验证成功")
+	userID, err := primitive.ObjectIDFromHex(user.ID)
+	if err != nil {
+		utils.Logger.Error().Err(err).Str("id", user.ID).Msg("无效的ID格式")
+		utils.ErrorResponse(c, "无效的ID格式", http.StatusBadRequest)
+		return
+	}
 
-	utils.SuccessResponse(c, gin.H{"user": user}, "")
+	if user.Role != string(models.UserRoleAGENT) {
+		// 检查账户是否存在
+		var modelsUser models.User
+		collection := repository.Collection(repository.UsersCollection)
+		err = collection.FindOne(repository.GetContext(), bson.M{"_id": userID}).Decode(&modelsUser)
+		if err != nil {
+			utils.ErrorResponse(c, "查询用户失败", http.StatusBadRequest)
+			return
+		}
+		utils.SuccessResponse(c, gin.H{"user": map[string]interface{}{
+			"_id":              modelsUser.ID.Hex(),
+			"id":               modelsUser.ID.Hex(),
+			"companyName":      "",
+			"username":         modelsUser.Username,
+			"role":             user.Role,
+			"status":           modelsUser.Status,
+			"rejectionReason":  modelsUser.RejectionReason,
+			"relatedSalesId":   modelsUser.RelatedSalesID,
+			"relatedSalesName": modelsUser.RelatedSalesName,
+		}}, "")
+	} else {
+		// 检查代理商是否存在
+		var modelsAgent models.Agent
+		collection := repository.Collection(repository.AgentsCollection)
+		err = collection.FindOne(repository.GetContext(), bson.M{"_id": userID}).Decode(&modelsAgent)
+		if err != nil {
+			utils.ErrorResponse(c, "查询代理商失败", http.StatusBadRequest)
+			return
+		}
+		utils.SuccessResponse(c, gin.H{"user": map[string]interface{}{
+			"_id":              modelsAgent.ID.Hex(),
+			"id":               modelsAgent.ID.Hex(),
+			"companyName":      modelsAgent.CompanyName,
+			"username":         modelsAgent.CompanyName,
+			"role":             user.Role,
+			"status":           modelsAgent.Status,
+			"rejectionReason":  "",
+			"relatedSalesId":   modelsAgent.RelatedSalesID,
+			"relatedSalesName": modelsAgent.RelatedSalesName,
+		}}, "")
+	}
 }

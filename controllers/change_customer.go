@@ -94,11 +94,11 @@ func AssignCustomer(c *gin.Context) {
 
 	// 准备更新数据
 	updateData := bson.M{
-		"relatedsalesid":   assignRequest.SalesId,
-		"relatedsalesname": salesUser.Username,
+		"relatedSalesId":   assignRequest.SalesId,
+		"relatedSalesName": salesUser.Username,
 		"lastupdatetime":   time.Now(),
-		"updatedat":        time.Now(),
-		"isinpublicpool":   false,
+		"updatedAt":        time.Now(),
+		"isInPublicPool":   false,
 		"progress":         models.CustomerProgressNormal,
 	}
 
@@ -110,7 +110,6 @@ func AssignCustomer(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "无效的代理商ID格式"})
 			return
 		}
-
 		var agent models.Agent
 		err = agentsCollection.FindOne(ctx, bson.M{"_id": agentObjID}).Decode(&agent)
 		if err != nil {
@@ -123,8 +122,8 @@ func AssignCustomer(c *gin.Context) {
 			return
 		}
 
-		updateData["relatedagentid"] = assignRequest.AgentId
-		updateData["relatedagentname"] = agent.CompanyName
+		updateData["relatedAgentId"] = assignRequest.AgentId
+		updateData["relatedAgentName"] = agent.CompanyName
 
 		agentInfo = map[string]string{
 			"id":   assignRequest.AgentId,
@@ -132,8 +131,8 @@ func AssignCustomer(c *gin.Context) {
 		}
 	} else if assignRequest.AgentId == "" {
 		// 清空代理商关联
-		updateData["relatedagentid"] = nil
-		updateData["relatedagentname"] = nil
+		updateData["relatedAgentId"] = nil
+		updateData["relatedAgentName"] = nil
 	}
 
 	// 更新客户数据
@@ -285,21 +284,21 @@ func ChangeCustomerProgress(c *gin.Context) {
 	updateData := bson.M{
 		"progress":       progressRequest.Progress,
 		"lastupdatetime": time.Now(),
-		"updatedat":      time.Now(),
+		"updatedAt":      time.Now(),
 	}
 
 	// 如果移入公海池，更新相关标志
 	if isMovingToPublicPool {
-		updateData["isinpublicpool"] = true
-		updateData["previousownerid"] = customer.RelatedSalesID
-		updateData["previousownername"] = customer.RelatedSalesName
-		updateData["previousownertype"] = "FACTORY_SALES"
+		updateData["isInPublicPool"] = true
+		updateData["previousOwnerId"] = customer.RelatedSalesID
+		updateData["previousOwnerName"] = customer.RelatedSalesName
+		updateData["previousOwnerType"] = "FACTORY_SALES"
 
 		// 清空关联信息
-		updateData["relatedsalesid"] = nil
-		updateData["relatedsalesname"] = nil
-		updateData["relatedagentid"] = nil
-		updateData["relatedagentname"] = nil
+		updateData["relatedSalesId"] = nil
+		updateData["relatedSalesName"] = nil
+		updateData["relatedAgentId"] = nil
+		updateData["relatedAgentName"] = nil
 	}
 
 	// 更新客户数据

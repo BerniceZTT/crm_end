@@ -37,6 +37,6 @@ type CustomerProgressHistory struct {
 	OperatorID   string             `json:"operatorId" bson:"operatorid"`
 	OperatorName string             `json:"operatorName" bson:"operatorname"`
 	Remark       string             `json:"remark" bson:"remark"`
-	CreatedAt    time.Time          `json:"createdAt" bson:"createdat"`
-	UpdatedAt    time.Time          `json:"updatedAt" bson:"updatedat"`
+	CreatedAt    time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt    time.Time          `json:"updatedAt" bson:"updatedAt"`
 }

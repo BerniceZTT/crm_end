@@ -43,6 +43,7 @@ type Project struct {
 	Remark                    string             `json:"remark,omitempty" bson:"remark,omitempty"`
 	CreatedAt                 time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedAt                 time.Time          `json:"updatedAt" bson:"updatedAt"`
+	WebHidden                 bool               `json:"webHidden" bson:"webHidden"`
 }
 
 func ConvertProjectToResponse(project Project) ProjectResponse {

@@ -388,6 +388,52 @@ func BulkImportProducts(c *gin.Context) {
 		utils.HandleError(c, err)
 		return
 	}
+	// 获取插入后的 _id 和 product.Stock
+	type InsertedProduct struct {
+		ProductID primitive.ObjectID `json:"product_id" bson:"_id"`
+		Product   models.Product     `json:"product" bson:"product"`
+	}
+
+	var insertedProducts []InsertedProduct
+	for i, insertedID := range result.InsertedIDs {
+		insertedProducts = append(insertedProducts, InsertedProduct{
+			ProductID: insertedID.(primitive.ObjectID), // 转换为 ObjectID
+			Product:   request.Products[i],
+		})
+	}
+
+	// 如果有初始库存，创建库存记录
+	for _, p := range insertedProducts {
+		productData := p.Product
+		productID := p.ProductID
+		if productData.Stock > 0 {
+			recordsCollection := repository.Collection(repository.InventoryRecordsCollection)
+			_, err := recordsCollection.InsertOne(context.Background(), models.InventoryRecord{
+				ProductID:     productID.Hex(),
+				ModelName:     productData.ModelName,
+				PackageType:   productData.PackageType,
+				OperationType: "in",
+				Quantity:      productData.Stock,
+				Remark:        "产品初始库存",
+				Operator:      user.Username,
+				OperatorID:    user.ID,
+				OperationTime: now,
+			})
+
+			if err != nil {
+				// 记录错误但不影响产品创建
+				utils.LogInfo(map[string]interface{}{
+					"error":     err.Error(),
+					"productId": productID.Hex(),
+				}, "创建初始库存记录失败，但产品已创建成功")
+			} else {
+				utils.LogInfo(map[string]interface{}{
+					"productId": productID.Hex(),
+					"stock":     productData.Stock,
+				}, "成功创建初始库存记录")
+			}
+		}
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message":       "批量导入产品成功",

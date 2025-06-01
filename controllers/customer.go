@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"errors"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -81,17 +81,17 @@ func GetCustomerList(c *gin.Context) {
 		filter["importance"] = importance
 	}
 
-	filter["isinpublicpool"] = isInPublicPool == "true"
+	filter["isInPublicPool"] = isInPublicPool == "true"
 
 	if models.UserRole(user.Role) == models.UserRoleSUPER_ADMIN {
 		// 超级管理员可以查看所有客户
 	} else if models.UserRole(user.Role) == models.UserRoleFACTORY_SALES {
 		if isInPublicPool != "true" {
-			filter["relatedsalesid"] = user.ID
+			filter["relatedSalesId"] = user.ID
 		}
 	} else if models.UserRole(user.Role) == models.UserRoleAGENT {
 		if isInPublicPool != "true" {
-			filter["relatedagentid"] = user.ID
+			filter["relatedAgentId"] = user.ID
 		}
 	} else {
 		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问客户数据"})
@@ -1006,8 +1006,8 @@ func UpdateCustomer(c *gin.Context) {
 
 	relatedSalesChanged := updateData["relatedSalesId"] != nil &&
 		updateData["relatedSalesId"] != customer.RelatedSalesID
-	relatedAgentChanged := updateData["relatedAgentId"] != nil &&
-		updateData["relatedAgentId"] != customer.RelatedAgentID
+	relatedAgentChanged := (updateData["relatedAgentId"] == nil && customer.RelatedAgentID != "") ||
+		(updateData["relatedAgentId"] != nil && updateData["relatedAgentId"] != customer.RelatedAgentID)
 
 	if relatedSalesChanged {
 		usersCollection := repository.Collection(repository.UsersCollection)
@@ -1049,6 +1049,7 @@ func UpdateCustomer(c *gin.Context) {
 		updateData["relatedAgentName"] = agent.CompanyName
 	} else if relatedAgentChanged && (updateData["relatedAgentId"] == nil || updateData["relatedAgentId"] == "") {
 		updateData["relatedAgentName"] = ""
+		updateData["relatedAgentId"] = ""
 	}
 
 	progressChanged := updateData
@@ -1260,28 +1261,20 @@ func MoveCustomerToPublic(c *gin.Context) {
 		}
 	}
 
-	// 保存之前的关联信息
-	// previousInfo := bson.M{
-	// 	"previousRelatedSalesId":   customer.RelatedSalesID,
-	// 	"previousRelatedSalesName": customer.RelatedSalesName,
-	// 	"previousRelatedAgentId":   customer.RelatedAgentID,
-	// 	"previousRelatedAgentName": customer.RelatedAgentName,
-	// }
-
 	// 更新客户状态为公海
 	now := time.Now()
 	updateResult, err := collection.UpdateOne(
 		ctx,
 		bson.M{"_id": objectID},
 		bson.M{"$set": bson.M{
-			"isinpublicpool":   true,
+			"isInPublicPool":   true,
 			"progress":         models.CustomerProgressPublicPool,
-			"relatedsalesid":   nil,
-			"relatedsalesname": nil,
-			"relatedagentid":   nil,
-			"relatedagentname": nil,
+			"relatedSalesId":   nil,
+			"relatedSalesName": nil,
+			"relatedAgentId":   nil,
+			"relatedAgentName": nil,
 			"lastupdatetime":   now,
-			"updatedat":        now,
+			"updatedAt":        now,
 		}},
 	)
 	if err != nil {
@@ -1320,6 +1313,14 @@ func MoveCustomerToPublic(c *gin.Context) {
 		"id":   id,
 		"name": customer.Name,
 	}, "客户已成功移入公海")
+
+	// 客户下项目全部变成前端不可展示
+	err = UpdateWebHiddenByCustomerID(ctx, objectID)
+	if err != nil {
+		utils.LogError(err, map[string]interface{}{
+			"id": objectID,
+		}, "客户下所有项目不可见更新失败")
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "客户已成功移入公海"})
 }

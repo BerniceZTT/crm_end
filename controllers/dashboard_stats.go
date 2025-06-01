@@ -124,9 +124,6 @@ func GetDashboardStats(c *gin.Context) {
 
 	// 合并日期筛选条件
 	for k, v := range dateFilter {
-		if k == "createdAt" {
-			customerQuery["createdat"] = v
-		}
 		baseProjectQuery[k] = v
 	}
 
@@ -307,14 +304,20 @@ func GetDashboardStats(c *gin.Context) {
 	}{
 		{"库存不足(0-5k)", 0, 5000},
 		{"库存适中(5k-3w)", 5000, 30000},
-		{"库存充足(3w+)", 30001, math.MaxInt32},
+		{"库存充足(3w+)", 30001, 0},
 	}
 
 	var stockLevelDistribution []models.ChartDataItem
 	for _, level := range stockLevels {
-		count, err := productsCollection.CountDocuments(ctx, bson.M{
+		query := bson.M{
 			"stock": bson.M{"$gte": level.min, "$lte": level.max},
-		})
+		}
+		if level.max == 0 {
+			query = bson.M{
+				"stock": bson.M{"$gte": level.min},
+			}
+		}
+		count, err := productsCollection.CountDocuments(ctx, query)
 		if err != nil {
 			utils.HandleError(c, fmt.Errorf("统计产品库存等级失败: %w", err))
 			return

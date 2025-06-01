@@ -30,7 +30,7 @@ func GetCustomerAssignmentHistory(c *gin.Context) {
 
 	// 按创建时间降序排序选项
 	findOptions := options.Find()
-	findOptions.SetSort(bson.M{"createdat": -1})
+	findOptions.SetSort(bson.M{"createdAt": -1})
 
 	// 查询该客户的所有分配历史
 	cursor, err := collection.Find(ctx, bson.M{"customerid": customerId}, findOptions)
@@ -130,7 +130,7 @@ func GetAllCustomerAssignmentHistory(c *gin.Context) {
 
 	// 按创建时间降序排序选项
 	findOptions := options.Find()
-	findOptions.SetSort(bson.M{"createdat": -1})
+	findOptions.SetSort(bson.M{"createdAt": -1})
 
 	// 查询分配历史记录
 	cursor, err := collection.Find(ctx, filter, findOptions)

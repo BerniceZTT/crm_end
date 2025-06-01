@@ -23,6 +23,6 @@ type CustomerAssignmentHistory struct {
 	OperatorID           string             `json:"operatorId" bson:"operatorid"`
 	OperatorName         string             `json:"operatorName" bson:"operatorname"`
 	OperationType        string             `json:"operationType" bson:"operationtype"`
-	CreatedAt            time.Time          `json:"createdAt" bson:"createdat"`
-	UpdatedAt            time.Time          `json:"updatedAt" bson:"updatedat"`
+	CreatedAt            time.Time          `json:"createdAt" bson:"createdAt"`
+	UpdatedAt            time.Time          `json:"updatedAt" bson:"updatedAt"`
 }

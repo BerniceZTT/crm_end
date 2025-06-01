@@ -320,7 +320,7 @@ func UpdateAgent(c *gin.Context) {
 	}
 
 	// 设置更新时间
-	update["updatedat"] = time.Now()
+	update["updatedAt"] = time.Now()
 
 	if updateData.Status != "" {
 		update["status"] = updateData.Status

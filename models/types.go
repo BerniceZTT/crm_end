@@ -75,22 +75,22 @@ type Customer struct {
 	OwnerTypeDisplay string `json:"ownerTypeDisplay" bson:"ownertypedisplay,omitempty"`
 
 	// 关联销售信息
-	RelatedSalesID   string `json:"relatedSalesId" bson:"relatedsalesid"`
-	RelatedSalesName string `json:"relatedSalesName" bson:"relatedsalesname"`
+	RelatedSalesID   string `json:"relatedSalesId" bson:"relatedSalesId"`
+	RelatedSalesName string `json:"relatedSalesName" bson:"relatedSalesName"`
 
 	// 关联代理商信息
-	RelatedAgentID   string `json:"relatedAgentId" bson:"relatedagentid"`
-	RelatedAgentName string `json:"relatedAgentName" bson:"relatedagentname"`
+	RelatedAgentID   string `json:"relatedAgentId" bson:"relatedAgentId"`
+	RelatedAgentName string `json:"relatedAgentName" bson:"relatedAgentName"`
 
-	IsInPublicPool bool      `json:"isInPublicPool" bson:"isinpublicpool"`
+	IsInPublicPool bool      `json:"isInPublicPool" bson:"isInPublicPool"`
 	LastUpdateTime time.Time `json:"lastUpdateTime" bson:"lastupdatetime"`
-	CreatedAt      time.Time `json:"createdAt" bson:"createdat"`
-	UpdatedAt      time.Time `json:"updatedAt" bson:"updatedat"`
+	CreatedAt      time.Time `json:"createdAt" bson:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt" bson:"updatedAt"`
 
 	// 公海池恢复相关字段
-	PreviousOwnerID   string `json:"previousOwnerId,omitempty" bson:"previousownerid,omitempty"`
-	PreviousOwnerName string `json:"previousOwnerName,omitempty" bson:"previousownername,omitempty"`
-	PreviousOwnerType string `json:"previousOwnerType,omitempty" bson:"previousownertype,omitempty"`
+	PreviousOwnerID   string `json:"previousOwnerId,omitempty" bson:"previousOwnerId,omitempty"`
+	PreviousOwnerName string `json:"previousOwnerName,omitempty" bson:"previousOwnerName,omitempty"`
+	PreviousOwnerType string `json:"previousOwnerType,omitempty" bson:"previousOwnerType,omitempty"`
 }
 
 // CustomerCreateRequest 创建客户请求

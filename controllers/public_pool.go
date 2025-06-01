@@ -32,7 +32,7 @@ func GetPublicPoolCustomers(c *gin.Context) {
 
 	// 构建查询
 	filter := bson.M{
-		"isinpublicpool": true,
+		"isInPublicPool": true,
 		"progress":       models.CustomerProgressPublicPool,
 	}
 
@@ -216,7 +216,7 @@ func AssignPublicPoolCustomer(c *gin.Context) {
 	var customer models.Customer
 	err = customersCollection.FindOne(
 		context.Background(),
-		bson.M{"_id": customerObjID, "isinpublicpool": true},
+		bson.M{"_id": customerObjID, "isInPublicPool": true},
 	).Decode(&customer)
 
 	if err != nil {
@@ -290,7 +290,7 @@ func AssignPublicPoolCustomer(c *gin.Context) {
 	now := time.Now()
 	update := bson.M{
 		"$set": bson.M{
-			"isinpublicpool":    false,
+			"isInPublicPool":    false,
 			"progress":          models.CustomerProgressNormal,
 			"previousOwnerId":   customer.PreviousOwnerID,
 			"previousOwnerName": customer.PreviousOwnerName,

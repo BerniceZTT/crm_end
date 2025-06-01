@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -56,6 +57,7 @@ func GetAllProjects(c *gin.Context) {
 	if customerIds != nil {
 		filter["customerId"] = bson.M{"$in": customerIds}
 	}
+	filter["webHidden"] = false
 
 	// 查询项目
 	findOptions := options.Find().
@@ -145,7 +147,7 @@ func GetCustomerProjects(c *gin.Context) {
 
 	// 查询项目列表
 	projectCollection := repository.Collection(repository.ProjectsCollection)
-	cursor, err := projectCollection.Find(ctx, bson.M{"customerId": customerObjID})
+	cursor, err := projectCollection.Find(ctx, bson.M{"customerId": customerObjID, "webHidden": false})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询项目失败"})
 		return
@@ -273,18 +275,12 @@ func DownloadProjectFile(c *gin.Context) {
 
 // 4. 获取单个项目详情
 func GetProjectDetail(c *gin.Context) {
-	startTime := time.Now()
 	currentUser, err := utils.GetUser(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
-	username := currentUser.Username
 	projectID := c.Param("id")
-
-	log.Printf("===== 获取项目详情开始 =====")
-	log.Printf("项目ID: %s", projectID)
-	log.Printf("用户: %s (%s)", username, currentUser.Role)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -296,10 +292,8 @@ func GetProjectDetail(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的项目ID格式"})
 		return
 	}
-	log.Printf("ObjectId转换成功: %s", projectObjID.Hex())
 
 	// 查询项目详情
-	log.Printf("开始查询项目详情...")
 	projectCollection := repository.Collection(repository.ProjectsCollection)
 	var project models.Project
 	err = projectCollection.FindOne(ctx, bson.M{"_id": projectObjID}).Decode(&project)
@@ -313,10 +307,8 @@ func GetProjectDetail(c *gin.Context) {
 		}
 		return
 	}
-	log.Printf("项目基本信息: 名称=%s, 客户ID=%s", project.ProjectName, project.CustomerID.Hex())
 
 	// 查询关联客户
-	log.Printf("开始查询关联客户权限...")
 	customerCollection := repository.Collection(repository.CustomersCollection)
 	customerObjID := project.CustomerID
 	var customer models.Customer
@@ -362,14 +354,6 @@ func GetProjectDetail(c *gin.Context) {
 		}
 	}
 
-	log.Printf("权限验证通过")
-
-	totalTime := time.Since(startTime).Milliseconds()
-	log.Printf("===== 项目详情获取成功 =====")
-	log.Printf("项目名称: %s", project.ProjectName)
-	log.Printf("项目ID: %s", project.ID.Hex())
-	log.Printf("总耗时: %dms", totalTime)
-
 	c.JSON(http.StatusOK, models.ProjectDetailResponse{
 		Success: true,
 		Project: project,
@@ -386,12 +370,21 @@ func CreateProject(c *gin.Context) {
 	username := currentUser.Username
 
 	var req struct {
-		ProjectName     string `json:"projectName" binding:"required"`
-		CustomerID      string `json:"customerId" binding:"required"`
-		ProductID       string `json:"productId" binding:"required"`
-		BatchNumber     string `json:"batchNumber" binding:"required"`
-		ProjectProgress string `json:"projectProgress" binding:"required"`
-		Remark          string `json:"remark,omitempty"`
+		ProjectName               string                  `json:"projectName" binding:"required"`
+		CustomerID                string                  `json:"customerId" binding:"required"`
+		ProductID                 string                  `json:"productId" binding:"required"`
+		BatchNumber               string                  `json:"batchNumber" binding:"required"`
+		ProjectProgress           string                  `json:"projectProgress" binding:"required"`
+		Remark                    string                  `json:"remark,omitempty"`
+		SmallBatchPrice           float64                 `json:"smallBatchPrice,omitempty"`
+		SmallBatchQuantity        int                     `json:"smallBatchQuantity,omitempty"`
+		SmallBatchTotal           float64                 `json:"smallBatchTotal,omitempty"`
+		SmallBatchAttachments     []models.FileAttachment `json:"smallBatchAttachments,omitempty"`
+		MassProductionPrice       float64                 `json:"massProductionPrice,omitempty"`
+		MassProductionQuantity    int                     `json:"massProductionQuantity,omitempty"`
+		MassProductionTotal       float64                 `json:"massProductionTotal,omitempty"`
+		PaymentTerm               string                  `json:"paymentTerm,omitempty"`
+		MassProductionAttachments []models.FileAttachment `json:"massProductionAttachments,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -479,7 +472,22 @@ func CreateProject(c *gin.Context) {
 		Remark:          req.Remark,
 		CreatedAt:       now,
 		UpdatedAt:       now,
+
+		SmallBatchPrice:       req.SmallBatchPrice,
+		SmallBatchQuantity:    req.SmallBatchQuantity,
+		SmallBatchTotal:       req.SmallBatchTotal,
+		SmallBatchAttachments: req.SmallBatchAttachments,
+
+		MassProductionPrice:       req.MassProductionPrice,
+		MassProductionQuantity:    req.MassProductionQuantity,
+		MassProductionTotal:       req.MassProductionTotal,
+		MassProductionAttachments: req.MassProductionAttachments,
+
+		WebHidden: false,
 	}
+
+	a, _ := json.Marshal(newProject)
+	log.Printf("bernicebernice, ID: %s", string(a))
 
 	// 插入项目
 	projectCollection := repository.Collection(repository.ProjectsCollection)
@@ -494,8 +502,6 @@ func CreateProject(c *gin.Context) {
 	log.Printf("项目创建成功, ID: %s", insertedID.Hex())
 
 	// 记录项目进展历史
-	log.Printf("项目进展历史记录已添加")
-
 	input := models.ProjectProgressHistory{
 		ProjectID:    insertedID.Hex(),
 		ProjectName:  req.ProjectName,
@@ -874,4 +880,14 @@ func getUserAccessibleCustomerIds(user *utils.LoginUser) ([]primitive.ObjectID, 
 		user.Username, len(customerIds), time.Since(startTime).Milliseconds())
 
 	return customerIds, nil
+}
+
+func UpdateWebHiddenByCustomerID(ctx context.Context, customerObjID primitive.ObjectID) error {
+	// 获取 projects 集合
+	projectCollection := repository.Collection(repository.ProjectsCollection)
+	filter := bson.M{"customerId": customerObjID, "webHidden": false}
+	update := bson.M{"$set": bson.M{"webHidden": true}}
+	// 执行更新操作
+	_, err := projectCollection.UpdateMany(ctx, filter, update)
+	return err
 }
