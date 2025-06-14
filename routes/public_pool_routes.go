@@ -20,7 +20,4 @@ func RegisterPublicPoolRoutes(router *gin.Engine) {
 
 	// 获取可分配的销售人员列表
 	publicPoolGroup.GET("/assignable-users", controllers.GetAssignableUsers)
-
-	// 从公海分配客户
-	publicPoolGroup.POST("/:id/assign", controllers.AssignPublicPoolCustomer)
 }

@@ -14,8 +14,8 @@ func RegisterCustomerAssignmentRoutes(router *gin.Engine) {
 	// 获取指定客户的分配历史记录
 	assignmentRoutes.GET("/:customerId", controllers.GetCustomerAssignmentHistory)
 
-	// 添加客户分配历史记录
-	assignmentRoutes.POST("/", controllers.AddCustomerAssignmentHistory)
+	// // 添加客户分配历史记录
+	// assignmentRoutes.POST("/", controllers.AddCustomerAssignmentHistory)
 
 	// 获取所有客户分配历史记录（可按条件筛选）
 	assignmentRoutes.GET("/", controllers.GetAllCustomerAssignmentHistory)

@@ -8,24 +8,11 @@ import (
 
 // 客户进展状态常量
 const (
-	CustomerProgressNormal     = "正常"
-	CustomerProgressPublicPool = "进入公海"
+	CustomerProgressInitialContact = "初步接触"
+	CustomerProgressNormal         = "正常推进"
+	CustomerProgressPublicPool     = "进入公海"
+	CustomerProgressDisabled       = "禁用"
 )
-
-// IsValidCustomerProgress 验证进展状态是否有效
-func IsValidCustomerProgress(progress string) bool {
-	validProgress := []string{
-		CustomerProgressNormal,
-		CustomerProgressPublicPool,
-	}
-
-	for _, p := range validProgress {
-		if p == progress {
-			return true
-		}
-	}
-	return false
-}
 
 // CustomerProgressHistory 客户进展历史记录
 type CustomerProgressHistory struct {

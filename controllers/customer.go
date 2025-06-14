@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -303,23 +302,9 @@ func CheckDuplicateCustomer(c *gin.Context) {
 	collection := repository.Collection(repository.CustomersCollection)
 
 	// 查询存在的客户
-	filter := bson.M{"name": bson.M{"$in": customerNames}}
-
-	// 如果是代理商或工厂销售，只能查看自己有权限的客户
-	if models.UserRole(user.Role) != models.UserRoleSUPER_ADMIN {
-		if models.UserRole(user.Role) == models.UserRoleFACTORY_SALES {
-			filter["$or"] = []bson.M{
-				{"ownerID": user.ID},
-				{"relatedSalesID": user.ID},
-				{"isInPublicPool": true},
-			}
-		} else if models.UserRole(user.Role) == models.UserRoleAGENT {
-			filter["$or"] = []bson.M{
-				{"ownerID": user.ID},
-				{"relatedAgentID": user.ID},
-				{"isInPublicPool": true},
-			}
-		}
+	filter := bson.M{
+		"name":     bson.M{"$in": customerNames},
+		"progress": models.CustomerProgressNormal,
 	}
 
 	cursor, err := collection.Find(ctx, filter)
@@ -353,81 +338,6 @@ func CheckDuplicateCustomer(c *gin.Context) {
 		"exists":     true,
 		"duplicates": duplicateNames,
 		"customers":  existingCustomers,
-	})
-}
-
-func CheckDuplicateCustomer2(c *gin.Context) {
-	// 1. 解析请求体
-	var requestBody struct {
-		CustomerNames []string `json:"customerNames"`
-	}
-
-	if err := c.ShouldBindJSON(&requestBody); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "无效的请求数据",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	// 2. 验证输入 - 必须且只能有1个客户名称
-	if len(requestBody.CustomerNames) != 1 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "请求参数错误",
-			"details": "必须且只能提供一个客户名称",
-		})
-		return
-	}
-
-	searchName := strings.TrimSpace(requestBody.CustomerNames[0])
-	if searchName == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "请求参数错误",
-			"details": "客户名称不能为空",
-		})
-		return
-	}
-
-	ctx := context.Background()
-	collection := repository.Collection(repository.CustomersCollection)
-
-	// 3. 构建模糊搜索条件（不区分大小写）
-	filter := bson.M{
-		"name": bson.M{
-			"$regex":   regexp.QuoteMeta(searchName),
-			"$options": "i", // i表示不区分大小写
-		},
-	}
-
-	// 4. 执行查询（限制返回100条结果防止数据量过大）
-	cursor, err := collection.Find(
-		ctx,
-		filter,
-		options.Find().
-			SetProjection(bson.M{"name": 1}).
-			SetLimit(100),
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "查询失败",
-			"details": err.Error(),
-		})
-		return
-	}
-	defer cursor.Close(ctx)
-
-	// 5. 处理结果
-	var results []models.Customer
-	if err := cursor.All(ctx, &results); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "数据处理失败",
-			"details": err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{
-		"customers":      results,
-		"duplicateCount": len(results),
 	})
 }
 
@@ -466,7 +376,7 @@ func CreateCustomer(c *gin.Context) {
 	existingCustomer := struct {
 		ID string `json:"_id,omitempty" bson:"_id,omitempty"`
 	}{}
-	err1 := collection.FindOne(ctx, bson.M{"name": requestData.Name}).Decode(&existingCustomer)
+	err1 := collection.FindOne(ctx, bson.M{"name": requestData.Name, "progress": models.CustomerProgressNormal}).Decode(&existingCustomer)
 	if err1 == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "客户名称已存在"})
 		return

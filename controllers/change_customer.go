@@ -14,6 +14,7 @@ import (
 
 	"github.com/BerniceZTT/crm_end/models"
 	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/service"
 	"github.com/BerniceZTT/crm_end/utils"
 )
 
@@ -93,13 +94,23 @@ func AssignCustomer(c *gin.Context) {
 	}
 
 	// 准备更新数据
+	progress := models.CustomerProgressInitialContact
+	had, err := service.HasProjects(ctx, customerObjID)
+	if err != nil {
+		utils.HandleError(c, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取客户项目状态失败"})
+		return
+	}
+	if had {
+		progress = models.CustomerProgressNormal
+	}
 	updateData := bson.M{
 		"relatedSalesId":   assignRequest.SalesId,
 		"relatedSalesName": salesUser.Username,
 		"lastupdatetime":   time.Now(),
 		"updatedAt":        time.Now(),
 		"isInPublicPool":   false,
-		"progress":         models.CustomerProgressNormal,
+		"progress":         progress,
 	}
 
 	// 处理代理商信息
@@ -147,6 +158,15 @@ func AssignCustomer(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "分配客户失败"})
 		return
 	}
+	if progress == models.CustomerProgressNormal {
+		// 更改其他客户状态
+		err1 := service.UpdateCustomerProgressByName(ctx, customer.Name, models.CustomerProgressDisabled)
+		if err != nil {
+			utils.HandleError(c, err1)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "客户为正常推进状态，修改其他同名客户信息报错"})
+			return
+		}
+	}
 
 	if result.MatchedCount == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "客户不存在或已被修改"})
@@ -160,16 +180,10 @@ func AssignCustomer(c *gin.Context) {
 	// 只在有变化时记录历史
 	if salesChanged || agentChanged {
 		operationType := "分配"
-
-		// 确定操作类型
-		if customer.IsInPublicPool {
+		// 判断是否为认领：当前用户是被分配的销售或代理商
+		if (user.Role == "FACTORY_SALES" && user.ID == assignRequest.SalesId) ||
+			(user.Role == "AGENT" && user.ID == assignRequest.AgentId) {
 			operationType = "认领"
-		} else {
-			// 判断是否为认领：当前用户是被分配的销售或代理商
-			if (user.Role == "FACTORY_SALES" && user.ID == assignRequest.SalesId) ||
-				(user.Role == "AGENT" && user.ID == assignRequest.AgentId) {
-				operationType = "认领"
-			}
 		}
 		// 记录分配历史
 		err = AddAssignmentHistory(ctx, models.CustomerAssignmentHistory{
@@ -203,146 +217,6 @@ func AssignCustomer(c *gin.Context) {
 			"salesName": salesUser.Username,
 			"agentId":   assignRequest.AgentId,
 			"agentName": agentInfo["name"],
-		},
-	})
-}
-
-// ChangeCustomerProgress 处理客户进展状态变更
-func ChangeCustomerProgress(c *gin.Context) {
-	// 获取客户ID
-	customerId := c.Param("id")
-	if customerId == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "客户ID不能为空"})
-		return
-	}
-
-	// 解析请求数据
-	var progressRequest struct {
-		Progress string `json:"progress" binding:"required"`
-		Remark   string `json:"remark"`
-	}
-
-	if err := c.ShouldBindJSON(&progressRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据"})
-		return
-	}
-
-	// 验证进展状态的有效性
-	if !models.IsValidCustomerProgress(progressRequest.Progress) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的客户进展状态"})
-		return
-	}
-
-	// 获取当前用户信息
-	user, err := utils.GetUser(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
-
-	// 获取数据库上下文
-	ctx := repository.GetContext()
-
-	// 获取客户集合
-	customersCollection := repository.Collection(repository.CustomersCollection)
-
-	// 将客户ID转换为ObjectID
-	customerObjID, err := primitive.ObjectIDFromHex(customerId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的客户ID格式"})
-		return
-	}
-
-	// 查询客户
-	var customer models.Customer
-	err = customersCollection.FindOne(ctx, bson.M{"_id": customerObjID}).Decode(&customer)
-	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			c.JSON(http.StatusNotFound, gin.H{"error": "客户不存在"})
-		} else {
-			utils.HandleError(c, err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新客户进展失败"})
-		}
-		return
-	}
-
-	// 如果新进展与当前进展相同，则不需要更新
-	if customer.Progress == progressRequest.Progress {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "客户进展未变化",
-			"data": gin.H{
-				"progress": customer.Progress,
-			},
-		})
-		return
-	}
-
-	// 特殊处理：如果新状态是公海池
-	isMovingToPublicPool := progressRequest.Progress == models.CustomerProgressPublicPool
-
-	// 准备更新数据
-	updateData := bson.M{
-		"progress":       progressRequest.Progress,
-		"lastupdatetime": time.Now(),
-		"updatedAt":      time.Now(),
-	}
-
-	// 如果移入公海池，更新相关标志
-	if isMovingToPublicPool {
-		updateData["isInPublicPool"] = true
-		updateData["previousOwnerId"] = customer.RelatedSalesID
-		updateData["previousOwnerName"] = customer.RelatedSalesName
-		updateData["previousOwnerType"] = "FACTORY_SALES"
-
-		// 清空关联信息
-		updateData["relatedSalesId"] = nil
-		updateData["relatedSalesName"] = nil
-		updateData["relatedAgentId"] = nil
-		updateData["relatedAgentName"] = nil
-	}
-
-	// 更新客户数据
-	result, err := customersCollection.UpdateOne(
-		ctx,
-		bson.M{"_id": customerObjID},
-		bson.M{"$set": updateData},
-	)
-
-	if err != nil {
-		utils.HandleError(c, err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新客户进展失败"})
-		return
-	}
-
-	if result.MatchedCount == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "客户不存在或已被修改"})
-		return
-	}
-
-	// 记录进展历史
-	err = addProgressHistory(ctx, models.CustomerProgressHistory{
-		CustomerID:   customerId,
-		CustomerName: customer.Name,
-		FromProgress: customer.Progress,
-		ToProgress:   progressRequest.Progress,
-		OperatorID:   user.ID,
-		OperatorName: user.Username,
-		Remark:       progressRequest.Remark,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
-	})
-
-	if err != nil {
-		utils.HandleError(c, err)
-		// 不要因为记录历史失败而阻止整个进展更新流程
-	}
-
-	// 返回成功响应
-	c.JSON(http.StatusOK, gin.H{
-		"message": "客户进展更新成功",
-		"data": gin.H{
-			"previousProgress": customer.Progress,
-			"currentProgress":  progressRequest.Progress,
 		},
 	})
 }

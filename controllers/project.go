@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/BerniceZTT/crm_end/models"
 	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/service"
 	"github.com/BerniceZTT/crm_end/utils"
 )
 
@@ -486,9 +486,6 @@ func CreateProject(c *gin.Context) {
 		WebHidden: false,
 	}
 
-	a, _ := json.Marshal(newProject)
-	log.Printf("bernicebernice, ID: %s", string(a))
-
 	// 插入项目
 	projectCollection := repository.Collection(repository.ProjectsCollection)
 	result, err := projectCollection.InsertOne(ctx, newProject)
@@ -515,6 +512,18 @@ func CreateProject(c *gin.Context) {
 	if err != nil {
 		log.Printf("项目创建成功, AddProjectProgressHistoryFn err: %s", err.Error())
 	}
+
+	// 修改客户状态
+	err1 := service.UpdateCustomerProgress(ctx, customerObjID, models.CustomerProgressNormal)
+	if err1 != nil {
+		log.Printf("项目创建成功, UpdateCustomerProgress customerObjID: %v, err: %s", customerObjID, err.Error())
+	}
+	err2 := service.UpdateCustomerProgressByName(ctx, customer.Name, models.CustomerProgressDisabled)
+	if err2 != nil {
+		utils.HandleError(c, err2)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "客户为正常推进状态，修改其他同名客户信息报错"})
+	}
+	// 更改其他客户状态 bernice todo
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "项目创建成功",
