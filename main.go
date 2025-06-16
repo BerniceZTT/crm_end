@@ -12,6 +12,8 @@ import (
 	"github.com/BerniceZTT/crm_end/config"
 	"github.com/BerniceZTT/crm_end/middleware"
 	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/service"
+
 	"github.com/BerniceZTT/crm_end/routes"
 	"github.com/BerniceZTT/crm_end/utils"
 
@@ -61,6 +63,11 @@ func main() {
 		utils.Logger.Error().Err(err).Msg("初始化管理员账户失败")
 	}
 	utils.Logger.Info().Msg("系统初始化完成")
+
+	// 创建定时任务
+	service.ScheduleDailyTaskAt(23, 29, 0, func() {
+		service.ProcessInitialContactCustomers()
+	})
 
 	// 设置HTTP服务器
 	srv := &http.Server{

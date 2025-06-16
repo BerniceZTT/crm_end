@@ -28,6 +28,7 @@ func RegisterRoutes(router *gin.Engine) {
 	RegisterProjectRoutes(router)
 	RegisterProjectFollowUpRoutes(router)
 	RegisterProjectProgressRoutes(router)
+	RegisterSystemConfigtRoutes(router)
 
 	// 健康检查路由
 	router.GET("/api/health", func(c *gin.Context) {

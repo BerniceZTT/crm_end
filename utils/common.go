@@ -146,3 +146,16 @@ func InventoryOperationResponse(c *gin.Context, data interface{}, success bool) 
 		"error":   errorMsg,
 	})
 }
+
+// BoolPtr 返回布尔值的指针，如果输入为nil则使用默认值
+func BoolPtr(b *bool, defaultValue bool) bool {
+	if b != nil {
+		return *b
+	}
+	return defaultValue
+}
+
+// BoolValue 与BoolPtr功能相同，但名称更符合Go习惯
+func BoolValue(b *bool, defaultValue bool) bool {
+	return BoolPtr(b, defaultValue)
+}

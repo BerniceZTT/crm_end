@@ -59,6 +59,9 @@ func CreateUncertainOperationError() *ApiError {
 
 // HandleError 处理错误并返回适当的响应
 func HandleError(c *gin.Context, err error) {
+	if c == nil {
+		return
+	}
 	// 记录错误
 	errorMessage := err.Error()
 	Logger.Error().Str("path", c.Request.URL.Path).Str("method", c.Request.Method).Msg("API错误: " + errorMessage)

@@ -124,7 +124,11 @@ func GetDashboardStats(c *gin.Context) {
 
 	// 合并日期筛选条件
 	for k, v := range dateFilter {
-		baseProjectQuery[k] = v
+		if k == "createdAt" {
+			baseProjectQuery["startDate"] = v
+		} else {
+			baseProjectQuery[k] = v
+		}
 	}
 
 	// 根据用户角色添加权限过滤

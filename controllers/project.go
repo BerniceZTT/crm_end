@@ -385,6 +385,7 @@ func CreateProject(c *gin.Context) {
 		MassProductionTotal       float64                 `json:"massProductionTotal,omitempty"`
 		PaymentTerm               string                  `json:"paymentTerm,omitempty"`
 		MassProductionAttachments []models.FileAttachment `json:"massProductionAttachments,omitempty"`
+		StartDate                 time.Time               `json:"startDate" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -472,6 +473,7 @@ func CreateProject(c *gin.Context) {
 		Remark:          req.Remark,
 		CreatedAt:       now,
 		UpdatedAt:       now,
+		StartDate:       req.StartDate,
 
 		SmallBatchPrice:       req.SmallBatchPrice,
 		SmallBatchQuantity:    req.SmallBatchQuantity,
@@ -523,7 +525,7 @@ func CreateProject(c *gin.Context) {
 		utils.HandleError(c, err2)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "客户为正常推进状态，修改其他同名客户信息报错"})
 	}
-	// 更改其他客户状态 bernice todo
+	// 更改其他客户状态
 	c.JSON(http.StatusCreated, gin.H{
 		"success": true,
 		"message": "项目创建成功",
@@ -556,6 +558,7 @@ func UpdateProject(c *gin.Context) {
 		PaymentTerm               string                  `json:"paymentTerm,omitempty"`
 		MassProductionAttachments []models.FileAttachment `json:"massProductionAttachments,omitempty"`
 		Remark                    string                  `json:"remark,omitempty"`
+		StartDate                 time.Time               `json:"startDate,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -623,6 +626,7 @@ func UpdateProject(c *gin.Context) {
 		"updaterId":   currentUser.ID,
 		"updaterName": username,
 		"updatedAt":   time.Now(),
+		"startDate":   req.StartDate,
 	}
 
 	if req.ProjectName != "" {

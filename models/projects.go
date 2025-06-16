@@ -43,6 +43,7 @@ type Project struct {
 	Remark                    string             `json:"remark,omitempty" bson:"remark,omitempty"`
 	CreatedAt                 time.Time          `json:"createdAt" bson:"createdAt"`
 	UpdatedAt                 time.Time          `json:"updatedAt" bson:"updatedAt"`
+	StartDate                 time.Time          `json:"startDate" bson:"startDate"`
 	WebHidden                 bool               `json:"webHidden" bson:"webHidden"`
 }
 
@@ -72,6 +73,7 @@ func ConvertProjectToResponse(project Project) ProjectResponse {
 		Remark:                    project.Remark,
 		CreatedAt:                 project.CreatedAt,
 		UpdatedAt:                 project.UpdatedAt,
+		StartDate:                 project.StartDate,
 	}
 }
 
@@ -113,6 +115,7 @@ type ProjectResponse struct {
 	Remark                    string           `json:"remark,omitempty"`
 	CreatedAt                 time.Time        `json:"createdAt"`
 	UpdatedAt                 time.Time        `json:"updatedAt"`
+	StartDate                 time.Time        `json:"startDate"`
 }
 
 type ProjectListResponse struct {

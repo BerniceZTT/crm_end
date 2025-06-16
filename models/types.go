@@ -56,17 +56,18 @@ type Agent struct {
 
 // Customer 客户模型
 type Customer struct {
-	ID               primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name             string             `json:"name" bson:"name"`
-	Nature           string             `json:"nature" bson:"nature"`
-	Importance       string             `json:"importance" bson:"importance"`
-	ApplicationField string             `json:"applicationField" bson:"applicationfield"`
-	ProductNeeds     []string           `json:"productNeeds" bson:"productneeds"`
-	ContactPerson    string             `json:"contactPerson" bson:"contactperson"`
-	ContactPhone     string             `json:"contactPhone" bson:"contactphone"`
-	Address          string             `json:"address" bson:"address"`
-	Progress         string             `json:"progress" bson:"progress"`
-	AnnualDemand     float64            `json:"annualDemand" bson:"annualdemand"`
+	ID                 primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name               string             `json:"name" bson:"name"`
+	Nature             string             `json:"nature" bson:"nature"`
+	Importance         string             `json:"importance" bson:"importance"`
+	ApplicationField   string             `json:"applicationField" bson:"applicationfield"`
+	ProductNeeds       []string           `json:"productNeeds" bson:"productneeds"`
+	ContactPerson      string             `json:"contactPerson" bson:"contactperson"`
+	ContactPhone       string             `json:"contactPhone" bson:"contactphone"`
+	Address            string             `json:"address" bson:"address"`
+	Progress           string             `json:"progress" bson:"progress"`
+	InitialContactTime time.Time          `json:"initialContactTime" bson:"initialContactTime"`
+	AnnualDemand       float64            `json:"annualDemand" bson:"annualdemand"`
 
 	// 创建人信息
 	OwnerID          string `json:"ownerId" bson:"ownerid"`

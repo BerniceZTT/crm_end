@@ -32,6 +32,7 @@ const (
 	ProjectsCollection               = "projects"
 	ProjectFollowUpRecordsCollection = "projectFollowUpRecord"
 	ProjectProgressHistoryCollection = "projectProgressHistory"
+	SystemConfigsyCollection         = "systemConfigs"
 )
 
 var (

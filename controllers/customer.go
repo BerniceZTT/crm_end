@@ -22,6 +22,7 @@ import (
 
 	"github.com/BerniceZTT/crm_end/models"
 	"github.com/BerniceZTT/crm_end/repository"
+	"github.com/BerniceZTT/crm_end/service"
 	"github.com/BerniceZTT/crm_end/utils"
 )
 
@@ -425,28 +426,29 @@ func CreateCustomer(c *gin.Context) {
 	now := time.Now()
 
 	newCustomer := models.Customer{
-		ID:               primitive.NewObjectID(),
-		Name:             requestData.Name,
-		Nature:           requestData.Nature,
-		Importance:       requestData.Importance,
-		ApplicationField: requestData.ApplicationField,
-		ProductNeeds:     requestData.ProductNeeds,
-		ContactPerson:    requestData.ContactPerson,
-		ContactPhone:     requestData.ContactPhone,
-		Address:          requestData.Address,
-		Progress:         requestData.Progress,
-		AnnualDemand:     requestData.AnnualDemand,
-		OwnerID:          user.ID,
-		OwnerName:        user.Username,
-		OwnerType:        user.Role,
-		RelatedSalesID:   requestData.RelatedSalesID,
-		RelatedSalesName: salesUserName,
-		RelatedAgentID:   requestData.RelatedAgentID,
-		RelatedAgentName: agentCompanyName,
-		IsInPublicPool:   false,
-		LastUpdateTime:   now,
-		CreatedAt:        now,
-		UpdatedAt:        now,
+		ID:                 primitive.NewObjectID(),
+		Name:               requestData.Name,
+		Nature:             requestData.Nature,
+		Importance:         requestData.Importance,
+		ApplicationField:   requestData.ApplicationField,
+		ProductNeeds:       requestData.ProductNeeds,
+		ContactPerson:      requestData.ContactPerson,
+		ContactPhone:       requestData.ContactPhone,
+		Address:            requestData.Address,
+		Progress:           requestData.Progress,
+		InitialContactTime: now,
+		AnnualDemand:       requestData.AnnualDemand,
+		OwnerID:            user.ID,
+		OwnerName:          user.Username,
+		OwnerType:          user.Role,
+		RelatedSalesID:     requestData.RelatedSalesID,
+		RelatedSalesName:   salesUserName,
+		RelatedAgentID:     requestData.RelatedAgentID,
+		RelatedAgentName:   agentCompanyName,
+		IsInPublicPool:     false,
+		LastUpdateTime:     now,
+		CreatedAt:          now,
+		UpdatedAt:          now,
 	}
 
 	_, err = collection.InsertOne(ctx, newCustomer)
@@ -478,7 +480,7 @@ func CreateCustomer(c *gin.Context) {
 			OperationType:        operationType,
 		}
 
-		err = AddAssignmentHistory(ctx, assignmentHistory)
+		err = service.AddAssignmentHistory(ctx, assignmentHistory)
 		if err != nil {
 			utils.HandleError(c, err)
 		}
@@ -798,7 +800,7 @@ func BulkImportCustomers(c *gin.Context) {
 				OperationType:        operationType,
 			}
 
-			if err := AddAssignmentHistory(ctx, assignmentHistory); err != nil {
+			if err := service.AddAssignmentHistory(ctx, assignmentHistory); err != nil {
 				utils.LogError(err, map[string]interface{}{
 					"customerId": customerId,
 				}, "添加客户分配历史失败")
@@ -1024,7 +1026,7 @@ func UpdateCustomer(c *gin.Context) {
 			OperationType:        "分配",
 		}
 
-		err = AddAssignmentHistory(ctx, assignmentHistory)
+		err = service.AddAssignmentHistory(ctx, assignmentHistory)
 		if err != nil {
 			utils.HandleError(c, err)
 		}
@@ -1183,6 +1185,8 @@ func MoveCustomerToPublic(c *gin.Context) {
 			"relatedSalesName": nil,
 			"relatedAgentId":   nil,
 			"relatedAgentName": nil,
+			"contactperson":    "",
+			"contactphone":     "",
 			"lastupdatetime":   now,
 			"updatedAt":        now,
 		}},
@@ -1214,7 +1218,7 @@ func MoveCustomerToPublic(c *gin.Context) {
 		OperationType:        "移入公海池",
 	}
 
-	err = AddAssignmentHistory(ctx, assignmentHistory)
+	err = service.AddAssignmentHistory(ctx, assignmentHistory)
 	if err != nil {
 		utils.HandleError(c, err)
 	}
