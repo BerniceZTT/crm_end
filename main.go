@@ -65,7 +65,7 @@ func main() {
 	utils.Logger.Info().Msg("系统初始化完成")
 
 	// 创建定时任务
-	service.ScheduleDailyTaskAt(23, 29, 0, func() {
+	service.ScheduleDailyTaskAt(1, 0, 0, func() {
 		service.ProcessInitialContactCustomers()
 	})
 
