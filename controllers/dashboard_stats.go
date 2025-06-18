@@ -337,7 +337,7 @@ func GetDashboardStats(c *gin.Context) {
 	}
 
 	// 产品客户关联数量分布
-	productCustomerRelation, err := getProductCustomerRelation(ctx, baseProjectQuery, productsCollection, projectsCollection)
+	productCustomerRelation, err := getProductCustomerRelation(ctx, productsCollection, customersCollection, customerQuery, dateFilter)
 	if err != nil {
 		utils.HandleError(c, fmt.Errorf("获取产品客户关联失败: %w", err))
 		return
@@ -433,13 +433,15 @@ func GetDashboardStats(c *gin.Context) {
 	c.JSON(http.StatusOK, responseData)
 }
 
-// getProductCustomerRelation 获取产品客户关联数量分布
-func getProductCustomerRelation(ctx context.Context, baseProjectQuery bson.M,
-	productsCollection, projectsCollection *mongo.Collection) ([]models.ChartDataItem, error) {
+// getProductProjectRelation 获取产品项目关联数量分布
+func getProductCustomerRelation(ctx context.Context,
+	productsCollection, customersCollection *mongo.Collection,
+	customerQuery, productQuery bson.M) ([]models.ChartDataItem, error) {
 
-	cursor, err := productsCollection.Find(ctx, bson.M{}, options.Find().SetProjection(bson.M{
-		"modelName":   1,
-		"packageType": 1,
+	// 获取所有产品列表（应用productQuery过滤）
+	cursor, err := productsCollection.Find(ctx, productQuery, options.Find().SetProjection(bson.M{
+		"_id":       1,
+		"modelName": 1,
 	}))
 	if err != nil {
 		return nil, err
@@ -453,25 +455,47 @@ func getProductCustomerRelation(ctx context.Context, baseProjectQuery bson.M,
 
 	var productRelationData []models.ChartDataItem
 	for _, product := range products {
-		distinctCustomers, err := projectsCollection.Distinct(ctx, "customerId", bson.M{
-			"productId": product.ID,
-			"$and":      []bson.M{baseProjectQuery},
-		})
+		// 构建聚合管道
+		pipeline := []bson.M{
+			{
+				"$match": bson.M{
+					"$and": []bson.M{
+						{"productneeds": product.ID.Hex()}, // 假设存储的是Hex字符串
+						customerQuery,                      // 合并客户查询条件
+					},
+				},
+			},
+			{
+				"$group": bson.M{
+					"_id":   nil,
+					"count": bson.M{"$sum": 1},
+				},
+			},
+		}
 
+		cursor, err := customersCollection.Aggregate(ctx, pipeline)
 		if err != nil {
 			return nil, err
 		}
 
-		customerCount := len(distinctCustomers)
-		if customerCount > 0 {
-			productName := product.ModelName
-			if len(productName) > 6 {
-				productName = productName[:6] + "..."
-			}
+		var result []struct {
+			Count int `bson:"count"`
+		}
+		if err = cursor.All(ctx, &result); err != nil {
+			cursor.Close(ctx)
+			return nil, err
+		}
+		cursor.Close(ctx)
 
+		count := 0
+		if len(result) > 0 {
+			count = result[0].Count
+		}
+
+		if count > 0 {
 			productRelationData = append(productRelationData, models.ChartDataItem{
-				Name:  productName,
-				Value: customerCount,
+				Name:  product.ModelName,
+				Value: count,
 			})
 		}
 	}
@@ -488,7 +512,6 @@ func getProductCustomerRelation(ctx context.Context, baseProjectQuery bson.M,
 	return productRelationData, nil
 }
 
-// getProductProjectRelation 获取产品项目关联数量分布
 func getProductProjectRelation(ctx context.Context, baseProjectQuery bson.M,
 	productsCollection, projectsCollection *mongo.Collection) ([]models.ChartDataItem, error) {
 
@@ -519,9 +542,9 @@ func getProductProjectRelation(ctx context.Context, baseProjectQuery bson.M,
 
 		if count > 0 {
 			productName := product.ModelName
-			if len(productName) > 8 {
-				productName = productName[:8] + "..."
-			}
+			// if len(productName) > 8 {
+			// 	productName = productName[:8] + "..."
+			// }
 
 			productProjectData = append(productProjectData, models.ChartDataItem{
 				Name:  productName,
