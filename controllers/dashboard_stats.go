@@ -657,16 +657,16 @@ func getProjectMonthlyStats(ctx context.Context, baseProjectQuery bson.M,
 
 	oneYearAgo := time.Now().AddDate(-1, 0, 0)
 	query := bson.M{
-		"createdAt": bson.M{"$gte": oneYearAgo},
-		"$and":      []bson.M{baseProjectQuery},
+		"startDate": bson.M{"$gte": oneYearAgo},
+		// "$and":      []bson.M{baseProjectQuery},
 	}
 
 	pipeline := []bson.M{
 		{"$match": query},
 		{"$group": bson.M{
 			"_id": bson.M{
-				"year":  bson.M{"$year": "$createdAt"},
-				"month": bson.M{"$month": "$createdAt"},
+				"year":  bson.M{"$year": "$startDate"},
+				"month": bson.M{"$month": "$startDate"},
 			},
 			"projectCount":    bson.M{"$sum": 1},
 			"totalBatch":      bson.M{"$sum": "$massProductionTotal"},
