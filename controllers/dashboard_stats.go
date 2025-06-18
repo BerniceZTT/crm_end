@@ -129,6 +129,7 @@ func GetDashboardStats(c *gin.Context) {
 		} else {
 			baseProjectQuery[k] = v
 		}
+		customerQuery[k] = v
 	}
 
 	// 根据用户角色添加权限过滤
@@ -180,7 +181,7 @@ func GetDashboardStats(c *gin.Context) {
 		return
 	}
 
-	productCount, err := productsCollection.CountDocuments(ctx, bson.M{})
+	productCount, err := productsCollection.CountDocuments(ctx, dateFilter)
 	if err != nil {
 		utils.HandleError(c, fmt.Errorf("统计产品数量失败: %w", err))
 		return
