@@ -34,7 +34,7 @@ func GetAllConfigs(c *gin.Context) {
 	}
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 查询配置列表
@@ -75,7 +75,7 @@ func GetConfigsByType(c *gin.Context) {
 	utils.Logger.Info().Str("configType", configType).Msg("[配置管理] 获取配置类型")
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 查询配置列表
@@ -125,7 +125,7 @@ func GetConfigDetail(c *gin.Context) {
 	}
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 查询配置详情
@@ -175,7 +175,7 @@ func CreateConfig(c *gin.Context) {
 	}
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 检查配置键是否已存在
@@ -255,7 +255,7 @@ func UpdateConfig(c *gin.Context) {
 	}
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 检查配置是否存在
@@ -329,7 +329,7 @@ func DeleteConfig(c *gin.Context) {
 	utils.Logger.Info().Str("configId", configID).Msg("[配置管理] 删除配置")
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 执行删除
@@ -375,7 +375,7 @@ func ToggleConfigStatus(c *gin.Context) {
 	utils.Logger.Info().Str("configId", configID).Msg("[配置管理] 切换配置状态")
 
 	// 获取集合
-	collection := repository.Collection(repository.SystemConfigsyCollection)
+	collection := repository.Collection(repository.SystemConfigsCollection)
 	ctx := repository.GetContext()
 
 	// 获取当前配置

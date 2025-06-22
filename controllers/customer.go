@@ -37,8 +37,11 @@ func GetCustomerList(c *gin.Context) {
 	keyword := c.Query("keyword")
 	nature := c.Query("nature")
 	importance := c.Query("importance")
-	progress := c.Query("progress")
 	isInPublicPool := c.Query("isInPublicPool")
+	progress := c.Query("progress")
+	relatedSalesId := c.Query("relatedSalesId")
+	relatedAgentId := c.Query("relatedAgentId")
+
 	pageStr := c.DefaultQuery("page", "1")
 	limitStr := c.DefaultQuery("limit", "10")
 
@@ -96,6 +99,17 @@ func GetCustomerList(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问客户数据"})
 		return
+	}
+	if relatedSalesId != "" {
+		filter["relatedSalesId"] = relatedSalesId
+
+	}
+	if relatedAgentId != "" {
+		filter["relatedAgentId"] = relatedAgentId
+	}
+
+	if progress != "" {
+		filter["progress"] = progress
 	}
 
 	ctx := repository.GetContext()

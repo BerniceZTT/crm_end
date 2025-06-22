@@ -32,62 +32,105 @@ func init() {
 
 // 1. 获取所有项目列表
 func GetAllProjects(c *gin.Context) {
-	startTime := time.Now()
 	currentUser, err := utils.GetUser(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 	username := currentUser.Username
+	role := currentUser.Role
 
-	log.Printf("[项目路由] 获取所有项目列表 - 用户: %s", username)
+	log.Printf("[项目路由] 获取项目列表 - 用户: %s, 角色: %s", username, role)
+
+	// 检查用户是否有权限访问项目管理
+	if !(role == string(models.UserRoleSUPER_ADMIN) || role == string(models.UserRoleFACTORY_SALES) || role == string(models.UserRoleAGENT)) {
+		log.Printf("[项目路由] 用户 %s 无权访问项目管理", username)
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权访问项目管理"})
+		return
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// 获取用户可访问的客户ID
+	collection := repository.Collection(repository.ProjectsCollection)
+
+	// 获取用户可访问的客户ID列表
 	customerIds, err := getUserAccessibleCustomerIds(currentUser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 构建查询条件
-	filter := bson.M{}
-	if customerIds != nil {
+	if role == string(models.UserRoleFACTORY_SALES) && len(customerIds) == 0 {
+		c.JSON(http.StatusOK, models.ProjectListResponse{Projects: []models.ProjectResponse{}})
+		return
+	}
+
+	// 构建基础查询条件
+	filter := bson.M{"webHidden": false}
+	if role != string(models.UserRoleSUPER_ADMIN) && len(customerIds) > 0 {
 		filter["customerId"] = bson.M{"$in": customerIds}
 	}
-	filter["webHidden"] = false
 
-	// 查询项目
-	findOptions := options.Find().
-		SetSort(bson.D{{"createdAt", -1}}).
-		SetLimit(1000)
+	// 第一次查询：获取基础项目列表
+	var projects []models.Project
+	opts := options.Find().
+		SetSort(bson.M{"createdAt": -1}).
+		SetLimit(1000).
+		SetProjection(bson.M{
+			"smallBatchAttachments":     0,
+			"massProductionAttachments": 0,
+		})
 
-	collection := repository.Collection(repository.ProjectsCollection)
-	cursor, err := collection.Find(ctx, filter, findOptions)
+	cursor, err := collection.Find(ctx, filter, opts)
 	if err != nil {
-		log.Printf("查询项目失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取项目列表失败"})
 		return
 	}
-	defer cursor.Close(ctx)
-
-	var projects []models.Project
 	if err = cursor.All(ctx, &projects); err != nil {
-		log.Printf("解析项目失败: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "解析项目列表失败"})
 		return
 	}
 
-	// 标准化项目数据
-	normalizedProjects := make([]models.ProjectResponse, len(projects))
-	for i, p := range projects {
-		normalizedProjects[i] = models.ConvertProjectToResponse(p)
+	// 提取所有关联的客户ID
+	customerIDMap := make(map[primitive.ObjectID]bool)
+	for _, p := range projects {
+		customerIDMap[p.CustomerID] = true
 	}
 
-	totalTime := time.Since(startTime).Milliseconds()
-	log.Printf("[项目路由] 找到 %d 个项目，总耗时: %dms", len(projects), totalTime)
+	// 批量查询客户信息
+	customerInfos := make(map[primitive.ObjectID]models.Customer)
+	if len(customerIDMap) > 0 {
+		customerIDs := make([]primitive.ObjectID, 0, len(customerIDMap))
+		for id := range customerIDMap {
+			customerIDs = append(customerIDs, id)
+		}
+
+		customerFilter := bson.M{"_id": bson.M{"$in": customerIDs}}
+		customerCursor, err := repository.Collection(repository.CustomersCollection).Find(ctx, customerFilter)
+		if err == nil {
+			var customers []models.Customer
+			if err = customerCursor.All(ctx, &customers); err == nil {
+				for _, cust := range customers {
+					customerInfos[cust.ID] = cust
+				}
+			}
+		}
+	}
+
+	// 构建响应数据
+	normalizedProjects := make([]models.ProjectResponse, len(projects))
+	for i, p := range projects {
+		resp := models.ConvertProjectToResponse(p)
+
+		// 添加客户关联信息
+		if cust, ok := customerInfos[p.CustomerID]; ok {
+			resp.RelatedAgentName = cust.RelatedAgentName
+			resp.RelatedSalesName = cust.RelatedSalesName
+		}
+
+		normalizedProjects[i] = resp
+	}
 
 	c.JSON(http.StatusOK, models.ProjectListResponse{Projects: normalizedProjects})
 }
@@ -147,7 +190,12 @@ func GetCustomerProjects(c *gin.Context) {
 
 	// 查询项目列表
 	projectCollection := repository.Collection(repository.ProjectsCollection)
-	cursor, err := projectCollection.Find(ctx, bson.M{"customerId": customerObjID, "webHidden": false})
+	opts := options.Find().SetProjection(bson.M{
+		"smallBatchAttachments":     0,
+		"massProductionAttachments": 0,
+	})
+
+	cursor, err := projectCollection.Find(ctx, bson.M{"customerId": customerObjID, "webHidden": false}, opts)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "查询项目失败"})
 		return
@@ -324,16 +372,7 @@ func GetProjectDetail(c *gin.Context) {
 		return
 	}
 
-	customerName := customer.Name
-	log.Printf("客户查询结果: %s", customerName)
-
 	// 权限验证
-	log.Printf("开始权限验证...")
-	log.Printf("用户角色: %s", currentUser.Role)
-	log.Printf("客户关联销售: %s", customer.RelatedSalesID)
-	log.Printf("客户关联代理: %s", customer.RelatedAgentID)
-	log.Printf("是否公海客户: %v", customer.IsInPublicPool)
-
 	if currentUser.Role != string(models.UserRoleSUPER_ADMIN) {
 		switch models.UserRole(currentUser.Role) {
 		case models.UserRoleFACTORY_SALES:
@@ -844,7 +883,7 @@ func getUserAccessibleCustomerIds(user *utils.LoginUser) ([]primitive.ObjectID, 
 
 	if user.Role == string(models.UserRoleSUPER_ADMIN) {
 		log.Printf("超级管理员，可访问所有客户，耗时: %dms", time.Since(startTime).Milliseconds())
-		return nil, nil // nil 表示所有客户
+		return nil, nil
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

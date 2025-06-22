@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -55,7 +56,9 @@ func LogApiResponse(method, url string, statusCode int, responseTime time.Durati
 	if statusCode >= 400 {
 		event = Logger.Error()
 	}
-
+	if strings.Contains(url, "/api/projects/") {
+		return
+	}
 	event.
 		Str("method", method).
 		Str("url", url).

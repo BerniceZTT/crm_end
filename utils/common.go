@@ -3,8 +3,10 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/BerniceZTT/crm_end/models"
 
@@ -158,4 +160,15 @@ func BoolPtr(b *bool, defaultValue bool) bool {
 // BoolValue 与BoolPtr功能相同，但名称更符合Go习惯
 func BoolValue(b *bool, defaultValue bool) bool {
 	return BoolPtr(b, defaultValue)
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func RandomString(n int) string {
+	rand.Seed(time.Now().UnixNano())
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }

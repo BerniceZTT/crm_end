@@ -58,7 +58,7 @@ func ProcessInitialContactCustomers() {
 		"isEnabled":  true,
 	}
 
-	systemConfigsCollection := repository.Collection(repository.SystemConfigsyCollection)
+	systemConfigsCollection := repository.Collection(repository.SystemConfigsCollection)
 	systemConfigsCursor, err := systemConfigsCollection.Find(ctx, query)
 	if err != nil {
 		log.Printf("查询系统配置失败: %v", err)

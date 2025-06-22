@@ -165,3 +165,17 @@ type (
 		Role     UserRole `json:"role" binding:"omitempty"`
 	}
 )
+
+// FileInfo 表示存储在 project_files 集合中的文件信息
+type FileInfo struct {
+	ID           string             `json:"id" bson:"id"`                     // 文件唯一标识
+	FileName     string             `json:"fileName" bson:"fileName"`         // 存储文件名
+	OriginalName string             `json:"originalName" bson:"originalName"` // 原始文件名
+	FileSize     int64              `json:"fileSize" bson:"fileSize"`         // 文件大小(字节)
+	FileType     string             `json:"fileType" bson:"fileType"`         // 文件类型
+	UploadTime   time.Time          `json:"uploadTime" bson:"uploadTime"`     // 上传时间
+	UploadedBy   string             `json:"uploadedBy" bson:"uploadedBy"`     // 上传人
+	UploaderID   primitive.ObjectID `json:"uploaderId" bson:"uploaderId"`     // 上传人ID
+	URL          string             `json:"url" bson:"url"`                   // 文件URL或存储路径
+	CreatedAt    time.Time          `json:"createdAt" bson:"createdAt"`       // 创建时间
+}

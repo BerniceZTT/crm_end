@@ -116,6 +116,8 @@ type ProjectResponse struct {
 	CreatedAt                 time.Time        `json:"createdAt"`
 	UpdatedAt                 time.Time        `json:"updatedAt"`
 	StartDate                 time.Time        `json:"startDate"`
+	RelatedAgentName          string           `json:"relatedAgentName"`
+	RelatedSalesName          string           `json:"relatedSalesName"`
 }
 
 type ProjectListResponse struct {
