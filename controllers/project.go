@@ -532,7 +532,7 @@ func CreateProject(c *gin.Context) {
 	result, err := projectCollection.InsertOne(ctx, newProject)
 	if err != nil {
 		log.Printf("创建项目失败: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建项目失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("创建项目失败: %v", err)})
 		return
 	}
 
@@ -565,7 +565,7 @@ func CreateProject(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "客户为正常推进状态，修改其他同名客户信息报错"})
 	}
 	// 更改其他客户状态
-	c.JSON(http.StatusCreated, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "项目创建成功",
 		"project": gin.H{
