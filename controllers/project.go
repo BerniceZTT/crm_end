@@ -432,8 +432,6 @@ func CreateProject(c *gin.Context) {
 		return
 	}
 
-	log.Printf("创建项目请求 - 用户: %s, 数据: %+v", username, req)
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -604,8 +602,6 @@ func UpdateProject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求数据: " + err.Error()})
 		return
 	}
-
-	log.Printf("更新项目请求 - 项目ID: %s, 用户: %s, 数据: %+v", projectID, username, req)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

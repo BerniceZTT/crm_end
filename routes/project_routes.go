@@ -12,11 +12,11 @@ func RegisterProjectRoutes(router *gin.Engine) {
 
 	projectGroup.Use(middleware.AuthMiddleware())
 
-	projectGroup.GET("/", controllers.GetAllProjects)
+	projectGroup.GET("", controllers.GetAllProjects)
 	projectGroup.GET("/customer/:customerId", controllers.GetCustomerProjects)
 	projectGroup.GET("/download/:projectId/:fileId", controllers.DownloadProjectFile)
 	projectGroup.GET("/:id", controllers.GetProjectDetail)
-	projectGroup.POST("/", controllers.CreateProject)
+	projectGroup.POST("", controllers.CreateProject)
 	projectGroup.PUT("/:id", controllers.UpdateProject)
 	projectGroup.DELETE("/:id", controllers.DeleteProject)
 }
