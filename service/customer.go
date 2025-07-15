@@ -139,7 +139,7 @@ func AssignCustomer(ctx context.Context, c *gin.Context, customerId string, assi
 		"isInPublicPool":   false,
 		"progress":         progress,
 	}
-	if progress == models.CustomerProgressInitialContact && customer.Progress != models.CustomerProgressInitialContact {
+	if progress == models.CustomerProgressInitialContact {
 		updateData = bson.M{
 			"relatedSalesId":     assignRequest.SalesId,
 			"relatedSalesName":   salesUser.Username,
